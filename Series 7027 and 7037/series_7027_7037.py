@@ -113,6 +113,42 @@ class Series_7027():
             print(f"{visaerr}")
         return
     
+    @property
+    def manufacturer_id(self):
+        """Returns the instrument/sensor manufacturer ID.
+
+        Returns:
+            str: The instrument/sensor manufacturer ID.
+        """
+        return self._mfg_id
+    
+    @property
+    def model_number(self):
+        """Returns the instrument/sensor model number.
+
+        Returns:
+            str: The instrument/sensor model number.
+        """
+        return self._model
+
+    @property
+    def firmware_version(self):
+        """Returns the instrument/sensor firmware version.
+
+        Returns:
+            str: The instrument/sensor firmware version.
+        """
+        return self._fw
+
+    @property
+    def serial_number(self):
+        """Returns the instrument/sensor serial number.
+
+        Returns:
+            str: The instrument/sensor serial number.
+        """
+        return self._sn
+    
     class Sense():
         """_summary_
         """
