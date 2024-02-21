@@ -1,7 +1,7 @@
 """
 Example Description:
-    This example shows how to use PyVisa to connect to and query informantion
-    from a Series 7027 or 7037 Statistical Power Sensor.
+    This example shows how to use the 7027/7037 driver to connect to and
+    query informantion from a Series 7027 or 7037 Statistical Power Sensor.
 
 @verbatim
 
