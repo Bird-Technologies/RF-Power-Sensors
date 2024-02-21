@@ -49,6 +49,8 @@ class Series_7027():
         self._general = ""
 
         self.sense = None
+        self.trigger = None
+        self.fetch = None
 
         try:
             if self._rm is None:
@@ -79,8 +81,11 @@ class Series_7027():
 
             #self._instr_obj.write("*CLS;*RST\n")
             self.write("*CLS;*RST")
+
             # Ensure sub-classes are updated properly
             self.sense = self.Sense(self._instr_obj)
+            self.fetch = self.Fetch(self._instr_obj)
+            self.trigger = self.Trigger(self._instr_obj)
 
             # Extract the instrument ID string and populate attributes
             self._general = self.query("*IDN?")
@@ -149,6 +154,84 @@ class Series_7027():
         """
         return self._sn
     
+    class Fetch():
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        def __init__(self, instrobj):
+            self._instr_obj = instrobj
+            self.state = self.State(instrobj)
+            self.temp = None
+        
+        def forward_power(self):
+            """
+            Gets the forward average power from the most recent measurement. 
+            This does not initiate a new measurement. 
+
+            Returns:
+                float: Power in Watts (w)
+            """
+            return float(self._instr_obj.query("FETC:AVER?").rstrip())
+        
+        def reflected_power(self):
+            """
+            Gets the reflected average power from the most recent measurement.
+            This does not initiate a new measurement. 
+
+            Returns:
+                float: Power in Watts (w)
+            """
+            return float(self._instr_obj.query("FETC:REFL:AVER?").rstrip())
+        
+        class State():
+            """_summary_
+
+            Returns:
+                _type_: _description_
+            """
+            def __init__(self, instrobj):
+                self._instr_obj = instrobj
+
+    class Trigger():
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        def __init__(self, instrobj):
+            self._instr_obj = instrobj
+
+        @property
+        def continuous(self):
+            """
+            Get continuous trigger mode. 
+
+            Returns:
+                int: 0 for OFF, 1 for ON
+            """
+            return int(self._instr_obj.query("INIT:CONT?").rstrip())
+        
+        @continuous.setter
+        def continuous(self, state:int=0):
+            """
+            Set continuous trigger mode.
+
+            Args:
+                state (int): Pass 0 for OFF, 1 for ON. 
+            """
+            self._instr_obj.write(f"INIT:CONT {state}")
+        
+        def once(self):
+            """
+            Trigger Initiate Immediate Command. Causes trigger to exit the IDLE
+            state. Removes the device from the "wait for trigger" state and places
+            it in the "idle" state. It does not affect any other settings of
+            the trigger system. 
+            """
+            self._instr_obj.write(f"INIT:IMM")
+
     class Sense():
         """_summary_
         """
