@@ -48,6 +48,7 @@ class Series_7027():
         self._fw = ""
         self._general = ""
 
+        self.calculate = None
         self.sense = None
         self.trigger = None
         self.fetch = None
@@ -83,6 +84,7 @@ class Series_7027():
             self.write("*CLS;*RST")
 
             # Ensure sub-classes are updated properly
+            self.calculate = self.Calculate(self._instr_obj)
             self.sense = self.Sense(self._instr_obj)
             self.fetch = self.Fetch(self._instr_obj)
             self.trigger = self.Trigger(self._instr_obj)
@@ -154,6 +156,66 @@ class Series_7027():
         """
         return self._sn
     
+    class Calculate():
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        def __init__(self, instrobj):
+            self._instr_obj = instrobj
+            self.average = self.Average(self._instr_obj)
+            self.gate = self.Gate(self._instr_obj)
+            self.state = self.State(self._instr_obj)
+
+        class Average():
+            """_summary_
+
+            Returns:
+                _type_: _description_
+            """
+            def __init__(self, instrobj):
+                self._instr_obj = instrobj
+            
+            def clear(self):
+                val = 1
+                
+            @property
+            def count(self):
+                return 0
+            
+            @count.setter
+            def count(self, count):
+                val = count
+        
+        class Gate():
+            """_summary_
+
+            Returns:
+                _type_: _description_
+            """
+            def __init__(self, instrobj):
+                self._instr_obj = instrobj
+                self.begin = self.Begin(self._instr_obj)
+                self.end = self.End(self._instr_obj)
+
+            class Begin():
+                def __init__(self, instrobj):
+                    self._instr_obj = instrobj
+            
+            class End():
+                def __init__(self, instrobj):
+                    self._instr_obj = instrobj
+        
+        class State():
+            """_summary_
+
+            Returns:
+                _type_: _description_
+            """
+            def __init__(self, instrobj):
+                self._instr_obj = instrobj
+
     class Fetch():
         """_summary_
 
@@ -184,6 +246,155 @@ class Series_7027():
                 float: Power in Watts (w)
             """
             return float(self._instr_obj.query("FETC:REFL:AVER?").rstrip())
+        
+        def temperature(self):
+            """
+            Gets the current temperature.  
+
+            Returns:
+                float: Temperature in Celcius (C)
+            """
+            return float(self._instr_obj.query("FETC:TEMP?").rstrip())
+        
+        def duty_cycle(self):
+            """
+            Gets the duty cycle for the most recent measurement. The proportion
+            of the average pulse width to the average pulse period is returned.
+            See Statistics. This does not initiate a new measurement.   
+
+            Returns:
+                float: Duty cycle in percent (%)
+            """
+            return float(self._instr_obj.query("FETC:DCYC?").rstrip())
+        
+        def frequency(self):
+            """
+            Gets the RF carrier frequency from the most recent measurement. This
+            does not initiate a new measurement.    
+
+            Returns:
+                float: Frequency in MHz
+            """
+            return float(self._instr_obj.query("FETC:FREQ?").rstrip())
+        
+        def gate_count(self):
+            """
+            Gets the number of pulses for which statistics have been accumulated.
+            This does not initiate a new measurement. See Statistics.     
+
+            Returns:
+                int: Count in pulses.
+            """
+            return int(self._instr_obj.query("FETC:GATE:COUN?").rstrip())
+        
+        def gate_maximum(self):
+            """
+            Gets the maximum of gated mean. The mean power in the gate interval is
+            determined for each pulse. The maximum of the mean power over all the
+            pulses is returned. See Statistics. This does not initiate a new
+            measurement.      
+
+            Returns:
+                float: Maximum gate power (W).
+            """
+            return float(self._instr_obj.query("FETC:GATE:MAX?").rstrip())
+        
+        def gate_minimum(self):
+            """
+            Gets the minimum of gated mean. The mean power in the gate interval is
+            determined for each pulse. The minimum of the mean power over all the
+            pulses is returned. See Statistics. This does not initiate a new
+            measurement.      
+
+            Returns:
+                float: Minimum gate power (W).
+            """
+            return float(self._instr_obj.query("FETC:GATE:MIN?").rstrip())
+        
+        def gate_mean(self):
+            """
+            Gets the mean power in the gate interval for the most recent measurement.
+            The mean power in the gate interval is determined for each pulse. The
+            average of the mean power over all the pulses is returned. See Statistics.
+            This does not initiate a new measurement.       
+
+            Returns:
+                float: Mean gate power (W).
+            """
+            return float(self._instr_obj.query("FETC:GATE:MEAN?").rstrip())
+        
+        def period(self):
+            """
+            Get the pulse period for the most recent measurement. The period is
+            determined for each pulse. The average of the period over all the pulses
+            is returned. See Statistics. This does not initiate a new measurement.       
+
+            Returns:
+                float: Period in microseconds (us).
+            """
+            return float(self._instr_obj.query("FETC:PER?").rstrip())
+        
+        def pulse_repetition_frequency(self):
+            """
+            Gets the pulse repetition frequency for the most recent measurement.
+            The average pulse repetition frequency is returned. See Statistics.
+            This does not initiate a new measurement.        
+
+            Returns:
+                float: Frequency (Hz).
+            """
+            return float(self._instr_obj.query("FETC:PRF?").rstrip())
+        
+        def pulse_width(self):
+            """
+            Get the pulse width for the most recent measurement. The width is
+            determined for each pulse. The average of the width over all the
+            pulses is returned. See Statistics. This does not initiate a new
+            measurement.         
+
+            Returns:
+                float: Pulse width in microseconds (us).
+            """
+            return float(self._instr_obj.query("FETC:WID?").rstrip())
+        
+        def state_mean(self, state):
+            """
+            Gets the mean power in state interval for most recent measurement.         
+
+            Args:
+                state (int): 1 for state1, 2 for state2, 3 for state3, and
+                4 for state4.
+
+            Returns:
+                float: Mean power for the specified state in watts (W).
+            """
+            return float(self._instr_obj.query(f"FETC:STAT{state}:MEAN?").rstrip())
+        
+        def state_maximum(self, state):
+            """
+            Gets the maximum power in state interval for most recent measurement.         
+
+            Args:
+                state (int): 1 for state1, 2 for state2, 3 for state3, and
+                4 for state4.
+
+            Returns:
+                float: Maximum power for the specified state in watts (W).
+            """
+            return float(self._instr_obj.query(f"FETC:STAT{state}:MAX?").rstrip())
+        
+        def state_minimum(self, state):
+            """
+            Gets the minimum power in state interval for most recent measurement.         
+
+            Args:
+                state (int): 1 for state1, 2 for state2, 3 for state3, and
+                4 for state4.
+
+            Returns:
+                float: Minimum power for the specified state in watts (W).
+            """
+            return float(self._instr_obj.query(f"FETC:STAT{state}:MIN?").rstrip())
         
         class State():
             """_summary_
