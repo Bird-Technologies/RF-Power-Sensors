@@ -75,8 +75,8 @@ scomms = ""
 
 def get_instrument_identity(sp: serial):
     """Sends an 'I' command to the 5000 sensor. The sensor will respond with
-    its interrogation string detailing its model number and software version
-    number followed by a runtime string.
+    its interrogation string detailing its model number and software date and version
+    numbers followed by serial number. 
 
     Args:
         sp (serial): An instance of a pyserial object. 
@@ -86,9 +86,10 @@ def get_instrument_identity(sp: serial):
         sdate (string): The firmware build date. 
         sversion (string): The firmward version number.
         scomms (string): The type of communications interface being used. 
+        sserial (string): The sensor serial number. 
     """
     sp.flush()
-    sp.write(b'I\n')
+    sp.write(b'I\r\n')
     temp = sp.read_until(b'rs232\r\n').decode("utf-8").split(',')
     while ("501" in temp[0]) is False:
         sp.write(b'I\n')
@@ -99,7 +100,13 @@ def get_instrument_identity(sp: serial):
     tmp3 = temp[2].split('\n')
     sversion = tmp3[0].rstrip()
     scomms = tmp3[1].rstrip()
-    return smodel, sdate, sversion, scomms
+
+    # Now get the serial number....
+    sp.write(b'S\r\n')
+    temp = sp.read_until(b'\r\n').decode("utf-8").split(',')
+    sserial = temp[1].rstrip()
+
+    return smodel, sdate, sversion, scomms, sserial
 
 def get_calibration_status(sp: serial)->bool:
     """Peforms a check that the calibration flag is set indicating that
@@ -148,6 +155,30 @@ def set_measurement_configuration(sp: serial,
     #temp = sp.read_all().decode("utf-8").rstrip()
     if "NAK" in temp[2]:
         status = False
+    return status
+
+def perform_zero_calibration(sp: serial)->str:
+    """Performs a zero calibration on the sensor. The calibration process takes 
+    about 60 seconds to complete and must be done with no RF power applied. 
+
+    Args:
+        sp (serial): An instance of a pyserial object.
+
+    Returns:
+        str: "Pass" for a successful calibration, "Fail" for unsuccessful, and "Over"
+        for conditions where it appears RF power is actively being applied to the 
+        sensor. 
+    """
+    status = "Pass"
+    # change the timeout value to up to 60 seconds to align with the procedure expectations.
+    sp.timeout = 120.0
+    sp.write(b'Z\r\n')
+    temp = sp.read_until(b'\r\n').decode("utf-8").rstrip().split(',')
+    sp.timeout = 2.0
+    if "01" in temp[1]:
+        status = "Fail"
+    elif "02" in temp[1]:
+        status = "Over"
     return status
 
 def get_sample_measurement_data(sp: serial):
@@ -265,8 +296,8 @@ def get_streamed_measurement_data(sp:serial, measurement_count:int=10):
 ### MAIN PROGRAM STARTS HERE ###
 my5000 = serial.Serial(port='COM8', baudrate=9600, parity="N", stopbits=1,bytesize=8)
 
-smodel, sdate, sversion, scomms = get_instrument_identity(my5000)
-print(f"Model: {smodel}\nFW Version: {sversion}\nFW Date: {sdate}\nComms Type: {scomms}")
+smodel, sdate, sversion, scomms, ssn = get_instrument_identity(my5000)
+print(f"Model: {smodel}\nFW Version: {sversion}\nFW Date: {sdate}\nComms Type: {scomms}\nSN: {ssn}")
 
 print(get_calibration_status(my5000))
 
@@ -276,6 +307,8 @@ set_measurement_configuration(my5000,
                               filtervalue=Filter.medium,
                               measunits=PowerUnits.unit_auto_w,
                               ccdflimit=150.0)
+
+#perform_zero_calibration(my5000)
 
 status, burst_pwr, temperature, fwd_pwr, rfl_pwr, peak_pwr, filer_value, meas_type, units, ccdf_factor, crest_factor, duty_cycle = get_sample_measurement_data(my5000)
 
