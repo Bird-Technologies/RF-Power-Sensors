@@ -178,15 +178,45 @@ class Series_7027():
                 self._instr_obj = instrobj
             
             def clear(self):
-                val = 1
+                """Clear the accumulated average and restart the averaging process with the next measurement.
+                """
+                self._instr_obj.write("CALC:AVER:CLE")
                 
             @property
-            def count(self):
-                return 0
+            def count(self)->int:
+                """Gets the number of measurements to average.
+
+                Returns:
+                    int: Number of measurements to average.
+                """
+                return int(self._instr_obj.query("CALC:AVER:COUN?").rstrip())
             
             @count.setter
-            def count(self, count):
-                val = count
+            def count(self, count:int=1):
+                """Sets the number of measurements to average.
+
+                Args:
+                    count (_type_): _description_
+                """
+                self._instr_obj.write(f"CALC:AVER:COUN {count}")
+
+            @property
+            def state(self)->int:
+                """Get the result averaging state.
+
+                Returns:
+                    int: 1 for enabled, 0 for disabled.
+                """
+                return int(self._instr_obj.query("CALC:AVER:STAT?").rstrip())
+            
+            @state.setter
+            def state(self, enabled:int=0):
+                """Set the result averaging state.
+
+                Args:
+                    enabled (int, optional): Use 1 to enable averaging, 0 to disable. Defaults to 0.
+                """
+                self._instr_obj.write(f"CALC:AVER:STAT {enabled}")
         
         class Gate():
             """_summary_
@@ -202,10 +232,128 @@ class Series_7027():
             class Begin():
                 def __init__(self, instrobj):
                     self._instr_obj = instrobj
+                    self.level = self.Level(self._instr_obj)
+                
+                @property
+                def delay(self)->float:
+                    """Get the delay from the begin event to the beginning of the gated time interval.
+
+                    Returns:
+                        float: Delay in seconds. 
+                    """
+                    return float(self._instr_obj.query("CALC:GATE:BEG:DEL?").rstrip())
+                
+                @delay.setter
+                def delay(self, secs:float=0.0):
+                    """Set the delay from the begin event to the beginning of the gated time interval. Begin Delay is normally > 0 to begin the gated timing interval after the rising edge.
+
+                    Args:
+                        secs (float, optional): Seconds to delay. Defaults to 0.0.
+                    """
+                    self._instr_obj.write(f"CALC:GATE:BEG:DEL {secs}")
+
+                class Level():
+                    def __init__(self, instrobj):
+                        self._instr_obj = instrobj
+                    
+                    @property
+                    def high(self)->float:
+                        """Get the high threshold for detection of the rising edge of the pulse.
+
+                        Returns:
+                            float: High threshold as a percent.
+                        """
+                        return float(self._instr_obj.query("CALC:GATE:BEG:LEV:HIGH?").rstrip())
+                    
+                    @high.setter
+                    def high(self, value:float=90.0):
+                        """Set the high threshold for detection of the rising edge of the pulse.
+
+                        Args:
+                            value (float, optional): 0 to 100 percent. Defaults to 90.0.
+                        """
+                        self._instr_obj.write(f"CALC:GATE:BEG:LEV:HIGH {value}")
+
+                    @property
+                    def low(self)->float:
+                        """Get the low threshold for detection of the rising edge of the pulse.
+
+                        Returns:
+                            float: Low threshold as a percent.
+                        """
+                        return float(self._instr_obj.query("CALC:GATE:BEG:LEV:LOW?").rstrip())
+                    
+                    @low.setter
+                    def low(self, value:float=10.0):
+                        """Set the low threshold for detection of the rising edge of the pulse.
+
+                        Args:
+                            value (float, optional): 0 to 100 percent. Defaults to 10.0.
+                        """
+                        self._instr_obj.write(f"CALC:GATE:BEG:LEV:LOW {value}")
             
             class End():
                 def __init__(self, instrobj):
                     self._instr_obj = instrobj
+                    self.level = self.Level(self._instr_obj)
+                
+                @property
+                def delay(self)->float:
+                    """Get the delay from the end event to the end of the gated time interval.
+
+                    Returns:
+                        float: Delay in seconds. 
+                    """
+                    return float(self._instr_obj.query("CALC:GATE:END:DEL?").rstrip())
+                
+                @delay.setter
+                def delay(self, secs:float=0.0):
+                    """Set the delay from the end event to the end of the gated time interval. End Delay is normally < 0 to end the gated timing interval before the falling edge.
+
+                    Args:
+                        secs (float, optional): Seconds to delay. Defaults to 0.0.
+                    """
+                    self._instr_obj.write(f"CALC:GATE:END:DEL {secs}")
+
+                class Level():
+                    def __init__(self, instrobj):
+                        self._instr_obj = instrobj
+                    
+                    @property
+                    def high(self)->float:
+                        """Get the high threshold for detection of the falling edge of the pulse.
+
+                        Returns:
+                            float: High threshold as a percent.
+                        """
+                        return float(self._instr_obj.query("CALC:GATE:END:LEV:HIGH?").rstrip())
+                    
+                    @high.setter
+                    def high(self, value:float=90.0):
+                        """Set the high threshold for detection of the falling edge of the pulse.
+
+                        Args:
+                            value (float, optional): 0 to 100 percent. Defaults to 90.0.
+                        """
+                        self._instr_obj.write(f"CALC:GATE:END:LEV:HIGH {value}")
+
+                    @property
+                    def low(self)->float:
+                        """Get the low threshold for detection of the falling edge of the pulse.
+
+                        Returns:
+                            float: Low threshold as a percent.
+                        """
+                        return float(self._instr_obj.query("CALC:GATE:BEG:LEV:LOW?").rstrip())
+                    
+                    @low.setter
+                    def low(self, value:float=10.0):
+                        """Set the low threshold for detection of the falling edge of the pulse.
+
+                        Args:
+                            value (float, optional): 0 to 100 percent. Defaults to 10.0.
+                        """
+                        self._instr_obj.write(f"CALC:GATE:BEG:LEV:LOW {value}")
         
         class State():
             """_summary_
