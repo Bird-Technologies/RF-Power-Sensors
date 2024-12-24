@@ -52,6 +52,7 @@ class Series_7027():
         self.sense = None
         self.trigger = None
         self.fetch = None
+        self.format = None
 
         try:
             if self._rm is None:
@@ -85,8 +86,9 @@ class Series_7027():
 
             # Ensure sub-classes are updated properly
             self.calculate = self.Calculate(self._instr_obj)
-            self.sense = self.Sense(self._instr_obj)
             self.fetch = self.Fetch(self._instr_obj)
+            self.format = self.Format(self._instr_obj)
+            self.sense = self.Sense(self._instr_obj)
             self.trigger = self.Trigger(self._instr_obj)
 
             # Extract the instrument ID string and populate attributes
@@ -387,13 +389,57 @@ class Series_7027():
                 """Set of statenum enable/disable status.
 
                 Args:
-                    statenum (int, optional): An integer ranging from 1 to 4. Defaults to 1.. Defaults to 1.
+                    statenum (int, optional): An integer ranging from 1 to 4. Defaults to 1.
                     status (int, optional): 0 for OFF or 1 for ON. Defaults to 0.
                 """
                 tmpstr == "ON"
                 if status == 0:
                     tmpstr = "OFF"
                 self._instr_obj.write(f"CALC:STAT{statenum}:ENAB {tmpstr}")
+
+            @property
+            def begin_delay(self, statenum:int=1)->float:
+                """Returns position of statenum relative to trigger point.
+
+                Args:
+                    statenum (int, optional): An integer ranging from 1 to 4. Defaults to 1. Defaults to 1.
+
+                Returns:
+                    float: Delay in seconds from the trigger point.
+                """
+                return float(self._instr_obj.query(f"CALC:STAT{statenum}:BEG?").rstrip())
+            
+            @begin_delay.setter
+            def begin_delay(self, statenum:int=1, delay:float=0.0):
+                """Specifies position of statenum relative to trigger point.
+
+                Args:
+                    statenum (int, optional): An integer ranging from 1 to 4. Defaults to 1. Defaults to 1.
+                    delay (float, optional): Delay in seconds from the trigger point. Defaults to 0.0.
+                """
+                self._instr_obj.write(f"CALC:STAT{statenum}:BEG {delay}")
+
+            @property
+            def end_delay(self, statenum:int=1)->float:
+                """Returns position of statenum relative to trigger point.
+
+                Args:
+                    statenum (int, optional): An integer ranging from 1 to 4. Defaults to 1. Defaults to 1.
+
+                Returns:
+                    float: Delay in seconds from the trigger point.
+                """
+                return float(self._instr_obj.query(f"CALC:STAT{statenum}:END?").rstrip())
+            
+            @begin_delay.setter
+            def end_delay(self, statenum:int=1, delay:float=0.0):
+                """Specifies position of statenum relative to trigger point.
+
+                Args:
+                    statenum (int, optional): An integer ranging from 1 to 4. Defaults to 1. Defaults to 1.
+                    delay (float, optional): Delay in seconds from the trigger point. Defaults to 0.0 s.
+                """
+                self._instr_obj.write(f"CALC:STAT{statenum}:END {delay}")
 
     class Fetch():
         """_summary_
@@ -584,6 +630,18 @@ class Series_7027():
             def __init__(self, instrobj):
                 self._instr_obj = instrobj
 
+    class Format():
+        def __init__(self, instrobj):
+            self._instr_obj = instrobj
+
+        def status_register(self)->str:
+            """Gets the format of the status registers. Status registers are always formatted as ASCII.
+
+            Returns:
+                str: The format of the status registers.
+            """
+            return self._instr_obj.query("FORM:SREG?")
+
     class Trigger():
         """_summary_
 
@@ -631,6 +689,18 @@ class Series_7027():
             self._instr_obj = instrobj
             self.frequency = self.Frequency(instrobj)
         
+        class Period():
+            def __init__(self, instrobj):
+                """_summary_
+                """
+                self._instr_obj = instrobj
+        
+        class Sweep():
+            def __init__(self, instrobj):
+                """_summary_
+                """
+                self._instr_obj = instrobj
+
         class Frequency():
             """_summary_
             """
@@ -697,3 +767,20 @@ class Series_7027():
                 """
                 return float(self._instr_obj.query(f"SENS:FREQ:RANG:UPP?\n").rstrip())
         
+        @property
+        def reflected_enable(self)->int:
+            """Get reflected power measurement state.
+
+            Returns:
+                int: 1 for enabled, 0 for disabled.
+            """
+            return int(self._instr_obj.query(f"SENS:REFL:ENAB?\n").rstrip())
+        
+        @reflected_enable.setter
+        def reflected_enable(self, state:int=1):
+            """Set reflected power measurement state. Reflected power measurement may be disabled for faster forward power measurements.
+
+            Args:
+                state (int, optional): Use 1 to enable, 0 to disable. Defaults to 1.
+            """
+            self._instr_obj.write(f"SENS:REFL:ENAB {state}")
