@@ -53,6 +53,7 @@ class Series_7027():
         self.trigger = None
         self.fetch = None
         self.format = None
+        self.pnp = None
 
         try:
             if self._rm is None:
@@ -90,6 +91,7 @@ class Series_7027():
             self.format = self.Format(self._instr_obj)
             self.sense = self.Sense(self._instr_obj)
             self.trigger = self.Trigger(self._instr_obj)
+            self.pnp = self.PnP(self._instr_obj)
 
             # Extract the instrument ID string and populate attributes
             self._general = self.query("*IDN?")
@@ -158,6 +160,69 @@ class Series_7027():
         """
         return self._sn
     
+    class PnP():
+        def __init__(self, instrobj):
+            self._instr_obj = instrobj
+            self.file = self.File(self._instr_obj)
+
+        def initiate_transfer(self):
+            """Initiates a read of the Bird Plug and Play file. This reads file header details into memory
+and updates the file size and total number of blocks fields. The command is issued once before blocks of file data can be transferred from the device.
+            """
+            self._instr_obj.write("PNP:ITRansfer")
+
+        class File():
+            def __init__(self, instrobj):
+                self._instr_obj = instrobj
+                self.block = self.Block(self._instr_obj)
+            
+            def size(self)->int:
+                """Gets the Plug and Play file size.
+
+                Returns:
+                    int: File size.
+                """
+                return self._instr_obj.query("PNP:FILE:SIZE?")
+            
+            class Block():
+                def __init__(self, instrobj):
+                    self._instr_obj = instrobj
+
+                def data(self)->str:
+                    """Gets the Plug and Play file block data.
+
+                    Returns:
+                        str: PnP File Block Data Query
+                    """
+                    return self._instr_obj.query("PNP:FILE:BLOCk:DATA?")
+                
+                @property
+                def number(self)->int:
+                    """Gets the Plug and Play file block number to transfer.
+
+                    Returns:
+                        int: The block number to transfer.
+                    """
+                    return int(self._instr_obj.query("PNP:FILE:BLOCk:NUMBer?").rstrip())
+                
+                @number.setter
+                def number(self, block:int=1):
+                    """Sets the Plug and Play file block number to transfer.
+
+                    Args:
+                        block (int, optional): The block number to transfer. Defaults to 1.
+                    """
+                    self._instr_obj.write(f"PNP:FILE:BLOCk:NUMBer {block}")
+                
+                def total(self)->int:
+                    """Gets the total number of blocks for the Plug and Play file transfer.
+
+                    Returns:
+                        int: Total number of blocks.
+                    """
+                    return int(self._instr_obj.query("PNP:FILE:BLOCk:TOTal?").rstrip())
+                
+
     class Calculate():
         """_summary_
 
@@ -712,7 +777,7 @@ class Series_7027():
                 class Auto():
                     def __init__(self, instrobj):
                         self._instr_obj = instrobj
-                        self.period = self.Periods(self._instr_obj)
+                        self.periods = self.Periods(self._instr_obj)
                     
                     class Periods():
                         def __init__(self, instrobj):
