@@ -687,7 +687,9 @@ class Series_7027():
             """_summary_
             """
             self._instr_obj = instrobj
-            self.frequency = self.Frequency(instrobj)
+            self.frequency = self.Frequency(self._instr_obj)
+            self.period = self.Period(self._instr_obj)
+            self.sweep = self.Sweep(self._instr_obj)
         
         class Period():
             def __init__(self, instrobj):
@@ -700,6 +702,93 @@ class Series_7027():
                 """_summary_
                 """
                 self._instr_obj = instrobj
+                self.time = self.Time(self._instr_obj)
+
+            class Time():
+                def __init__(self, instrobj):
+                    self._instr_obj = instrobj
+                    self.auto = self.Auto(self._instr_obj)
+
+                class Auto():
+                    def __init__(self, instrobj):
+                        self._instr_obj = instrobj
+                        self.period = self.Periods(self._instr_obj)
+                    
+                    class Periods():
+                        def __init__(self, instrobj):
+                            self._instr_obj = instrobj
+                        
+                        @property
+                        def value(self)->int:
+                            """Query how many pulse periods are used as sweep time.
+
+                            Returns:
+                                int: Minimum of 1, maximum of 8.
+                            """
+                            return self._instr_obj.query("SENS:SWE:TIME:AUTO:PER?")
+                        
+                        @value.setter
+                        def value(self, count:int=1):
+                            """Set Number of pulse periods to use as sweep time.
+
+                            Args:
+                                count (int, optional): Minimum of 1, maximum of 8. Defaults to 1.
+                            """
+                            self._instr_obj.write(f"SENS:SWE:TIME:AUTO:PER {count}")
+
+                    @property
+                    def value(self)->int:
+                        """When enabled use measured pulse period as sweep time.
+
+                        Returns:
+                            int: 1 for enabled, 0 for disabled. 
+                        """
+                        return self._instr_obj.query("SENS:SWE:TIME:AUTO?")
+                    
+                    @value.setter
+                    def value(self, enabled:int=0):
+                        """When enabled use measured pulse period as sweep time.
+
+                        Args:
+                            enabled (int, optional): 1 for enabled, 0 for disabled. Defaults to 0.
+                        """
+                        self._instr_obj.write(f"SENS:SWE:TIME:AUTO {enabled}")
+                    
+                    @property
+                    def value(self)->float:
+                        """Returns the time interval to be returned by TRACe:TIME:DATA?.
+
+                        Returns:
+                            float: Seconds (s).
+                        """
+                        return self._instr_obj.query("SENS:SWE:TIME?")
+                    
+                    @value.setter
+                    def value(self, secs:float=0.0):
+                        """Specifies time interval to be returned by TRACe:TIME:DATA?
+
+                        Args:
+                            secs (float, optional): Seconds value. Defaults to 0.0.
+                        """
+                        self._instr_obj.write(f"SENS:SWE:TIME {secs}")
+            
+            @property
+            def delay(self)->float:
+                """Returns the beginning of sweep realative to trigger reference point.
+
+                Returns:
+                    float: Value in seconds.
+                """
+                return self._instr_obj.query("SENS:SWE:DEL?")
+            
+            @delay.setter
+            def delay(self, secs:float=0.0):
+                """Specifies beginning of sweep realative to trigger reference point.
+
+                Args:
+                    secs (float, optional): Seconds relative to trigger reference point. Defaults to 0.0.
+                """
+                self._instr_obj.write(f"SENS:SWE:DEL {secs}")
 
         class Frequency():
             """_summary_
