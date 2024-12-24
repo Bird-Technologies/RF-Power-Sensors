@@ -354,7 +354,7 @@ class Series_7027():
                             value (float, optional): 0 to 100 percent. Defaults to 10.0.
                         """
                         self._instr_obj.write(f"CALC:GATE:BEG:LEV:LOW {value}")
-        
+
         class State():
             """_summary_
 
@@ -363,6 +363,37 @@ class Series_7027():
             """
             def __init__(self, instrobj):
                 self._instr_obj = instrobj
+
+            @property
+            def enable(self, statenum:int=1)->int:
+                """Query of statenum enable/disable status.
+
+                Args:
+                    statenum (int, optional): An integer ranging from 1 to 4. Defaults to 1.
+
+                Returns:
+                    int: 0 for OFF or 1 for ON.
+                """
+                tmpval = self._instr_obj.query(f"CALC:STAT{statenum}:ENAB?").rstrip()
+                intval = 0
+                if "OFF" in tmpval:
+                    intval = 0
+                else:
+                    intval = 1
+                return int(intval)
+            
+            @enable.setter
+            def enable(self, statenum:int=1, status:int=0):
+                """Set of statenum enable/disable status.
+
+                Args:
+                    statenum (int, optional): An integer ranging from 1 to 4. Defaults to 1.. Defaults to 1.
+                    status (int, optional): 0 for OFF or 1 for ON. Defaults to 0.
+                """
+                tmpstr == "ON"
+                if status == 0:
+                    tmpstr = "OFF"
+                self._instr_obj.write(f"CALC:STAT{statenum}:ENAB {tmpstr}")
 
     class Fetch():
         """_summary_
