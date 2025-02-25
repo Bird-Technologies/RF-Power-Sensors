@@ -18,7 +18,7 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         self._return_crest_factor = 1 # - 10 crest factor R
         self._return_duty_cycle = 1 # - 11 duty cycle D
         self._return_ack = 1 # - 13 ACK/NAK A
-        self._cmd_delay = 0.25 # 0.3
+        self._cmd_delay = 0.3 # 0.3
 
         if "5012" in model_number:
             self.PRODUCT_ID = 0x5012
@@ -37,9 +37,29 @@ class Bird_5000_Series_Wideband_Power_Sensor():
 
     def instrument_identification(self):
         # Issue preamble notice
+        #hex_message = '0350ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+        #self.device.write(bytes.fromhex(hex_message))
+        
+        # I command
+        #hex_message = '02490d0affffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+        #self.device.write(bytes.fromhex(hex_message))
+        #hex_message = '0353ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+        #self.device.write(bytes.fromhex(hex_message))
+
+        #response = self.device.read(48, 2000)
+        #cleaned_response = response[1:]
+        #decoded_response = cleaned_response.decode('utf-8', errors='ignore')
+        #odel_number, software_date, runtime_version = decoded_response.split("\r\n")[0].split(',')
+        model_number, software_date, runtime_version = self._do_initialization()
+
+        return f"{self.device.manufacturer},{model_number},{self.device.serial},{runtime_version}"
+
+    def _do_initialization(self):
+        # Issue preamble notice
         hex_message = '0350ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
         self.device.write(bytes.fromhex(hex_message))
         
+        # I command
         hex_message = '02490d0affffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
         self.device.write(bytes.fromhex(hex_message))
         hex_message = '0353ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
@@ -50,8 +70,8 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         decoded_response = cleaned_response.decode('utf-8', errors='ignore')
         model_number, software_date, runtime_version = decoded_response.split("\r\n")[0].split(',')
 
-        return f"{self.device.manufacturer},{model_number},{self.device.serial},{runtime_version}"
-
+        return model_number, software_date, runtime_version
+    
     def _get_measure_type(self, mtype):
         mstr = "1"
         if mtype < 9:
@@ -95,27 +115,27 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         return ustr
     
     def configuration(self,
-                      measurement_type:int, 
-                      offset_db:float, 
-                      filter:float,
-                      units:int,
-                      ccdf_limit:float,
-                      forward_scale:float,
-                      reflected_scale:float):
-        """This function is used to configure the sensor. 
+                      measurement_type:int=1, 
+                      offset_db:float=0.0,
+                      filter:int=2,
+                      units:int=11,
+                      ccdf_limit:float=150.0):
+        """This function is used to configure the sensor
 
         Args:
-            measurement_type (int): 0 = None, 1 = Average, 2 = Peak, 3 = Burst, 4 = Crest, 5 = CCDF, 6 = Average Peak, 7 = Avg APM, 8 = APM, 9 = 43 Avg, 10 = 43 Peak, 11 = 43 Peak Avg
-            offset_db (float): The power offset for the measurements.
-            filter (float): Sets the filter speed for the measurements, accessible through the Filter enumeration with low as 4500 Hz, medium as 400 kHz, and high as 10 MHz.
-            units (int): Sets the power units for the measurements to be acquired from the sensor. 0=None, 1=dB, 2=Rho, 3=VSWR, 4=R, 5=RL, 6=dBm, 7=uW, 8=mW, 9=W, 10=kW, 11=Auto W, 12=MHz, 13=kHz, 14=Raw
-            ccdf_limit (float): Sets the ccdf limit for the measurements.
-            forward_scale (float): Sets the forward power scale for measurements. (5014 only)
-            reflected_scale (float): Sets the reflected power scale for measurements (5014 only)
+            measurement_type (int, optional): 0 = None, 1 = Average, 2 = Peak, 3 = Burst, 4 = Crest, 5 = CCDF, 6 = Average Peak. Defaults to 1.
+            offset_db (float, optional): The power offset for the measurements. Defaults to 0.0.
+            filter (int, optional): Sets the filter speed for the measurements, use 0 for 4500 Hz, 1 for 400 kHz, and 2 for 10 MHz. Defaults to 2.
+            units (int, optional): Sets the power units for the measurements to be acquired from the sensor. 0=None, 1=dB, 2=Rho, 3=VSWR, 4=R, 5=RL, 6=dBm, 7=uW, 8=mW, 9=W, 10=kW, 11=Auto W, 12=MHz, 13=kHz, 14=Raw. Defaults to 11.
+            ccdf_limit (float, optional): Sets the ccdf limit for the measurements.. Defaults to 150.0.
+
+        Returns:
+            _type_: code, ack_nak
         """
         # Perform the cal check before attempting to change the configuration - required
         s1, s2 = my5000.check_calibration()
-
+        #s1, s2 = my5000.check_calibration()
+        
         t1 = time.time()
         # Issue preamble notice
         buffer = '0350ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
@@ -126,49 +146,102 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         buffer = "02"
         # G
         buffer += "47"
-        # byte 0 is measurement type
+
+        # Add a comma...
+        buffer += "2c"
+
+        # Set the measurement type
+        hotval = ""
         if (measurement_type < 10) and (measurement_type >= 0):
-            buffer += self._get_measure_type(measurement_type)
-            #buffer += str(measurement_type.to_bytes(1, "big"))[4:6]
-        # byte 1:4 is offset value in dB
-        buffer += self.float_to_ieee_hex(offset_db)
+            hotval += self._get_measure_type(measurement_type)
+        buffer += hotval
+
+        # Add a comma...
+        buffer += "2c"
+
+        # Set the offset dB
+        hotval = self._convert_float_to_hex_string(offset_db)
+        buffer += hotval
+
+        # Add a comma...
+        buffer += "2c"
+
         # byte 5:8 is filter value in Hz
-        buffer += self.float_to_ieee_hex(filter)
+        temp004 = 0
+        if filter == 0:
+            temp004 = 4500
+        elif filter == 1:
+            temp004 = 400.0
+        elif filter == 2:
+            temp004 = 10000.0
+        #buffer += self.float_to_ieee_hex(temp004)
+        buffer += self._convert_float_to_hex_string(temp004)
+
+        # Add a comma...
+        buffer += "2c"
+
         # byte 9 is power units
         buffer += self._get_units_type(units)
-        #buffer += str(units.to_bytes(1, "big"))[4:6]
+        #buffer += self._convert_float_to_hex_string(units)
+
+        # Add a comma...
+        buffer += "2c"
+
         # byte 10:13 is CCDF limit in W
-        buffer += self.float_to_ieee_hex(ccdf_limit)
-        # byte 14:17 is forward scale in W
-        buffer += self.float_to_ieee_hex(forward_scale)
-        # byte 18:21 is reflected scal in W
-        buffer += self.float_to_ieee_hex(reflected_scale)
+        buffer += self._convert_float_to_hex_string(ccdf_limit)
+
+        # Terminate the command
+        buffer += "0d0a"
+
         # pad the remainder of the message string with "ff"; 22 bytes accounted for so 49-22 = 27
-        for j in range(0, 25):
+        for j in range(0, 5):
             buffer += "ff"
-        #print(buffer)
+        
         # send the command
         self.device.write(bytes.fromhex(buffer))
         t2 = time.time()
         delta = t2-t1
-        if delta < self._cmd_delay:
-            time.sleep(self._cmd_delay - (t2-t1))
+        config_time = 1.0
+        if delta < config_time: 
+            time.sleep(config_time - (t2-t1))
         else:
             time.sleep(self._cmd_delay)
 
         hex_message = '0353ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+
         self.device.write(bytes.fromhex(hex_message))
-        time.sleep(self._cmd_delay)
+        time.sleep(config_time)
         response = self.device.read(48, 2000)
         time.sleep(self._cmd_delay)
         cleaned_response = response[1:]
         decoded_response = cleaned_response.decode('utf-8', errors='ignore')[2:]
         code, ack_nak = decoded_response.split("\r\n")[0].split(',')
-        #t2 = time.time()
-        #if (t2-t1) < 0.3:
-        #    time.sleep(0.3 - (t2-t1))
+
+        # Issue preamble notice
+        buffer = '0350ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+        #print(buffer)
+        self.device.write(bytes.fromhex(buffer))
+        time.sleep(self._cmd_delay)
+
+        # Sample two datasets to ensure config settings are established...
+        ds = self.get_one_dataset()
+        ds = self.get_one_dataset()
 
         return code, ack_nak
+    
+    def _convert_float_to_hex_string(self, floater):
+        #print(floater)
+        if floater < 0:
+            tmp001 = f"{floater:1.4E}"
+        else:
+            tmp001 = f"{floater:1.5E}"
+        tmp002str = ""
+        for j in tmp001:
+            if j == "E":
+                j=j.lower()
+            tmp002str += j.encode("utf-8").hex()
+        #print(tmp002str)
+        return tmp002str
     
     def check_calibration(self):
         # Issue preamble notice
@@ -195,18 +268,9 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         cleaned_response = response[1:]
         decoded_response = cleaned_response.decode('utf-8', errors='ignore')
         code, ack_nak = decoded_response.split("\r\n")[0].split(',')
+
         return code, ack_nak
 
-    def zero_calibration(self):
-        # Z
-        print(1)
-        return 1 # 0x00 Pass, 0x01 Fail, 0x02 Over
-
-    def start_data_stream(self):
-        # D
-        # No returns
-        print(2)
-    
     def set_data_format(self, format_string:str="F"):
         """Establishes which data items are returned to the user when a dataset is retrieved from the sensor. The
         following flags will set the different data elements are returned in the following order: 
@@ -397,6 +461,16 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         
         return formatted_list
     
+    def zero_calibration(self):
+        # Z
+        print(1)
+        return 1 # 0x00 Pass, 0x01 Fail, 0x02 Over
+
+    def start_data_stream(self):
+        # D
+        # No returns
+        print(2)
+    
     def stop_data_stream(self):
         # U
         # no returns
@@ -415,11 +489,43 @@ my5000 = Bird_5000_Series_Wideband_Power_Sensor("5012D")
 print(my5000.instrument_identification())
 
 s1, s2 = my5000.check_calibration()
+db_offset = -0.3
 
-code, acknak = my5000.configuration(measurement_type=1, offset_db=0.0, filter=10E+6, units=1, ccdf_limit=5.0, forward_scale=5.0, reflected_scale=1.0)
+my5000.configuration(measurement_type=1, offset_db=0.0, filter=1, units=9, ccdf_limit=0.0)
+my5000.set_data_format("FRTUI")
+print("should be 400 kHz...")
+for k in range(0, 10):
+    print(my5000.get_one_dataset())
+
+my5000.configuration(measurement_type=1, offset_db=0.0, filter=2, units=9, ccdf_limit=0.0)
+print("should be 10000 kHz...")
+for k in range(0, 10):
+    print(my5000.get_one_dataset())
+
+my5000.configuration(measurement_type=1, offset_db=0.0, filter=0, units=9, ccdf_limit=0.0)
+print("should be 4.5 kHz...")
+for k in range(0, 10):
+    print(my5000.get_one_dataset())
+
+my5000.configuration(measurement_type=1, offset_db=0.0, filter=1, units=8, ccdf_limit=0.0)
+print("should be 400 kHz...")
+for k in range(0, 10):
+    print(my5000.get_one_dataset())
+
+my5000.configuration(measurement_type=1, offset_db=0.0, filter=2, units=8, ccdf_limit=0.0)
+print("should be 10000 kHz...")
+for k in range(0, 10):
+    print(my5000.get_one_dataset())
+
+my5000.configuration(measurement_type=1, offset_db=0.0, filter=0, units=8, ccdf_limit=0.0)
+print("should be 4.5 kHz...")
+for k in range(0, 10):
+    print(my5000.get_one_dataset())
+
+code, acknak = my5000.configuration(measurement_type=1, offset_db=0.0, filter=2, units=1)
 print(code, ",", acknak)
 
-my5000.set_data_format("I")
+#my5000.set_data_format("I")
 
 dataset = my5000.get_one_dataset()
 print(dataset)
@@ -429,7 +535,7 @@ my5000.set_data_format("FTUI")
 print("Checking Measurement Type....")
 for i in range(1, 10):
     print(f"mtype = {i}")
-    code, acknak = my5000.configuration(measurement_type=i, offset_db=0.0, filter=4.5e+3, units=11, ccdf_limit=5.0, forward_scale=5.0, reflected_scale=1.0)
+    code, acknak = my5000.configuration(measurement_type=i, offset_db=0.0, filter=2, units=11)
     
     for k in range(0, 10):
         dataset = my5000.get_one_dataset()
@@ -439,21 +545,11 @@ for i in range(1, 10):
 print("Checking Units Type....")
 for i in range(1, 10):
     print(f"utype = {i}")
-    code, acknak = my5000.configuration(measurement_type=1, offset_db=0.0, filter=10e+6, units=i, ccdf_limit=5.0, forward_scale=5.0, reflected_scale=1.0)
+    code, acknak = my5000.configuration(measurement_type=1, offset_db=0.0, filter=0, units=i)
     
     for k in range(0, 10):
         dataset = my5000.get_one_dataset()
         print(dataset)
         #time.sleep(0.5)
 
-print("Checking Filter Type....")
-fltr = [10e+6, 400e+3, 4.5e+3]
-for i in fltr:
-    print(f"filter = {i}")
-    code, acknak = my5000.configuration(measurement_type=6, offset_db=0.0, filter=i, units=11, ccdf_limit=5.0, forward_scale=5.0, reflected_scale=1.0)
-    
-    for k in range(0, 10):
-        dataset = my5000.get_one_dataset()
-        print(dataset)
-        #time.sleep(0.5)
 print("Done")
