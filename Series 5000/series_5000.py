@@ -202,6 +202,124 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         # Perform the cal check before attempting to change the configuration - required
         s2 = self.check_calibration()
         
+        if self._device_type_flag == 0:
+            code, ack_nak = self._do_5012_config(measurement_type=measurement_type, offset_db=offset_db, filter=filter, units=units, ccdf_limit=ccdf_limit)
+        elif self._device_type_flag == 1:
+            self._do_5014_config(measurement_type=measurement_type, offset_db=offset_db, filter=filter, units=units, ccdf_limit=ccdf_limit)
+
+        #t1 = time.time()
+        # Issue preamble notice
+        #buffer = '0350ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+        
+        #self.device.write(bytes.fromhex(buffer))
+        #time.sleep(self._cmd_delay)
+
+        #buffer = "02"
+        # G
+        #buffer += "47"
+
+        # Add a comma...
+        #buffer += "2c"
+
+        # Set the measurement type
+        #hotval = ""
+        #if (measurement_type < 10) and (measurement_type >= 0):
+        #    hotval += self._get_measure_type(measurement_type)
+        #buffer += hotval
+
+        # Add a comma...
+        #buffer += "2c"
+
+        # Set the offset dB
+        #hotval = self._convert_float_to_hex_string(offset_db)
+        #buffer += hotval
+
+        # Add a comma...
+        #buffer += "2c"
+
+        # byte 5:8 is filter value in Hz
+        #temp004 = 0
+        #if filter == 0:
+        #    temp004 = 4500
+        #elif filter == 1:
+        #    temp004 = 400.0
+        #elif filter == 2:
+        #    temp004 = 10000.0
+        
+        #buffer += self._convert_float_to_hex_string(temp004)
+
+        # Add a comma...
+        #buffer += "2c"
+
+        # byte 9 is power units
+        #buffer += self._get_units_type(units)
+
+        # Add a comma...
+        #buffer += "2c"
+
+        # byte 10:13 is CCDF limit in W
+        #buffer += self._convert_float_to_hex_string(ccdf_limit)
+
+        # Terminate the command
+        #buffer += "0d0a"
+
+        # pad the remainder of the message string with "ff"; 22 bytes accounted for so 49-22 = 27
+        #for j in range(0, 5):
+        #    buffer += "ff"
+        
+        # send the command
+        #self.device.write(bytes.fromhex(buffer))
+        #t2 = time.time()
+        #delta = t2-t1
+        #config_time = 1.0
+        #if delta < config_time: 
+        #    time.sleep(config_time - (t2-t1))
+        #else:
+        #    time.sleep(self._cmd_delay)
+
+        #hex_message = '0353ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+
+        #self.device.write(bytes.fromhex(hex_message))
+        #time.sleep(config_time)
+        #response = self.device.read(48, 2000)
+        #time.sleep(self._cmd_delay)
+        #cleaned_response = response[1:]
+        #decoded_response = cleaned_response.decode('utf-8', errors='ignore')[2:]
+        #code, ack_nak = decoded_response.split("\r\n")[0].split(',')
+
+        # Issue preamble notice
+        #buffer = '0350ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+        #print(buffer)
+        #self.device.write(bytes.fromhex(buffer))
+        #time.sleep(self._cmd_delay)
+
+        # Sample two datasets to ensure config settings are established...
+        #ds = self.get_one_dataset()
+        #ds = self.get_one_dataset()
+
+        return code, ack_nak
+    
+    def _do_5012_config(self,
+                      measurement_type:int=1, 
+                      offset_db:float=0.0,
+                      filter:int=2,
+                      units:int=11,
+                      ccdf_limit:float=150.0):
+        """This function is used to configure the sensor
+
+        Args:
+            measurement_type (int, optional): 0 = None, 1 = Average, 2 = Peak, 3 = Burst, 4 = Crest, 5 = CCDF, 6 = Average Peak. Defaults to 1.
+            offset_db (float, optional): The power offset for the measurements. Defaults to 0.0.
+            filter (int, optional): Sets the filter speed for the measurements, use 0 for 4500 Hz, 1 for 400 kHz, and 2 for 10 MHz. Defaults to 2.
+            units (int, optional): Sets the power units for the measurements to be acquired from the sensor. 0=None, 1=dB, 2=Rho, 3=VSWR, 4=R, 5=RL, 6=dBm, 7=uW, 8=mW, 9=W, 10=kW, 11=Auto W, 12=MHz, 13=kHz, 14=Raw. Defaults to 11.
+            ccdf_limit (float, optional): Sets the ccdf limit for the measurements.. Defaults to 150.0.
+
+        Returns:
+            _type_: code, ack_nak
+        """
+        # Perform the cal check before attempting to change the configuration - required
+        s2 = self.check_calibration()
+        
         t1 = time.time()
         # Issue preamble notice
         buffer = '0350ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
@@ -293,7 +411,30 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         ds = self.get_one_dataset()
 
         return code, ack_nak
-    
+
+    def _do_5014_config(self,
+                    measurement_type:int=1, 
+                    offset_db:float=0.0,
+                    filter:int=2,
+                    units:int=11,
+                    ccdf_limit:float=150.0):
+        """This function is used to configure the sensor
+
+        Args:
+            measurement_type (int, optional): 0 = None, 1 = Average, 2 = Peak, 3 = Burst, 4 = Crest, 5 = CCDF, 6 = Average Peak. Defaults to 1.
+            offset_db (float, optional): The power offset for the measurements. Defaults to 0.0.
+            filter (int, optional): Sets the filter speed for the measurements, use 0 for 4500 Hz, 1 for 400 kHz, and 2 for 10 MHz. Defaults to 2.
+            units (int, optional): Sets the power units for the measurements to be acquired from the sensor. 0=None, 1=dB, 2=Rho, 3=VSWR, 4=R, 5=RL, 6=dBm, 7=uW, 8=mW, 9=W, 10=kW, 11=Auto W, 12=MHz, 13=kHz, 14=Raw. Defaults to 11.
+            ccdf_limit (float, optional): Sets the ccdf limit for the measurements.. Defaults to 150.0.
+
+        Returns:
+            _type_: code, ack_nak
+        """
+        code = None 
+        ack_nak = None 
+
+        return code, ack_nak
+
     def _convert_float_to_hex_string(self, floater:float)->str:
         """Accepts a floating point value and converts it to the string version then converted to hex values. 
 
