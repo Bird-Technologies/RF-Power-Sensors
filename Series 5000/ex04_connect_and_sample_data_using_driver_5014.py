@@ -30,7 +30,7 @@ SOFTWARE.
 
 @endverbatim
 
-@file ex03_.py
+@file ex04_connect_and_sample_data_using_driver_5014.py
  
 """
 from series_5000 import Bird_5000_Series_Wideband_Power_Sensor
@@ -45,8 +45,8 @@ print(my5000.instrument_identification())
 # Perform the calibration check.
 cal_status = my5000.check_calibration()
 
-# Set the configuration so the sensor performs average power measurements, no dB offset, using the 400 kHz filter, no CCDF limit.
-#my5000.configuration(measurement_type=1, offset_db=0.0, filter=2, units=9, ccdf_limit=0.0)
+# Set the configuration so the sensor performs average power measurements.
+my5000.configuration(fwd_scale=500.0, rfl_scale=50.0, offset_db=0.0)
 
 # Set the dataset readback format to display forward power, reflected power, and temperature. 
 my5000.set_data_format("FRT")
