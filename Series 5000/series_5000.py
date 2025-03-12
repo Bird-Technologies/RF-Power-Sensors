@@ -30,10 +30,14 @@ SOFTWARE.
 
 @endverbatim
 
-@file ex02_connect_and_communicate_using_hid.py
+@file series_5000.py
  
 """
-import hid
+# The use of the hid library, the user needed to....
+#    1. pip -install hidapi
+#    2. pip -install hid
+#    3. Acquired a copy of hidapi.dll and .lib from here: https://github.com/libusb/hidapi/releases and placed copies in the C:\Windows\System32 folder. 
+import hid  
 import struct
 import time
 
@@ -597,57 +601,6 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         elif self._device_type_flag == 1:
             fmt_list = self._get_dataset_5014()
         
-        
-        #t1 = time.time()
-        # Issue preamble notice
-        #buffer = '0350ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
-        #self.device.write(bytes.fromhex(buffer))
-
-        # Issue command to get one dataset
-        #buffer = "02"
-        # T
-        #buffer += "54"
-        # pad the remainder of the message string with "ff"; 2 bytes accounted for so 49-2 = 47
-        #for j in range(0, 47):
-        #    buffer += "ff"
-        # send the command
-        #self.device.write(bytes.fromhex(buffer))
-
-        # Issue message to return data
-        #hex_message = '0353ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
-        #self.device.write(bytes.fromhex(hex_message))
-        #response = self.device.read(64, 2000)[3:] # responses (report size) said to be 64 bytes max
-        #decoded_response = response.decode('utf-8', errors='ignore')
-
-        #hex_message = '0353ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
-        #self.device.write(bytes.fromhex(hex_message))
-        #response = self.device.read(64, 2000)[1:] # responses (report size) said to be 64 bytes max
-        #decoded_response += response.decode('utf-8', errors='ignore')
-
-        #hex_message = '0353ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
-        #self.device.write(bytes.fromhex(hex_message))
-        #response = self.device.read(64, 2000)[1:] # responses (report size) said to be 64 bytes max
-        #decoded_response += response.decode('utf-8', errors='ignore')
-
-        #tempval = decoded_response.split("\r\n")[0].split(',')
-        #fmt_list = self._get_formatted_output(tempval)
-        #t2 = time.time()
-
-        #time.sleep(0.3 - (t2-t1))
-        # Extracted array holds the following
-        # - 1 busrt power B
-        # - 2 temperature T
-        # - 3 forward power F
-        # - 4 reflected power R
-        # - 5 peak power K
-        # - 6 filter value I
-        # - 7 measure type M
-        # - 8 units U
-        # - 9 ccdf factor C
-        # - 10 crest factor R
-        # - 11 duty cycle D
-        # - 12 n/a - empty
-        # - 13 ACK/NAK A
         return fmt_list
     
     def _get_dataset_5012(self):
