@@ -46,10 +46,10 @@ print(my5000.instrument_identification())
 cal_status = my5000.check_calibration()
 
 # Set the configuration so the sensor performs average power measurements, no dB offset, using the 400 kHz filter, no CCDF limit.
-my5000.configuration(measurement_type=1, offset_db=0.0, filter=2, units=9, ccdf_limit=0.0)
+#my5000.configuration(measurement_type=1, offset_db=0.0, filter=2, units=9, ccdf_limit=0.0)
 
-# Set the dataset readback format to display forward power, reflected power, temperature, units, and filter value. 
-my5000.set_data_format("FRTUI")
+# Set the dataset readback format to display forward power, reflected power, and temperature. 
+my5000.set_data_format("FRT")
 
 # Sample data...
 for k in range(0, 10):
