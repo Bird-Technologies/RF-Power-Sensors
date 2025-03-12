@@ -30,7 +30,7 @@ SOFTWARE.
 
 @endverbatim
 
-@file ex03_.py
+@file ex03_connect_and_sample_data_using_driver.py
  
 """
 from series_5000 import Bird_5000_Series_Wideband_Power_Sensor
