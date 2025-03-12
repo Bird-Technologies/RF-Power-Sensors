@@ -94,7 +94,7 @@ class Bird4421B540Class:
 
 birdMod1 = Bird4421B540Class()
 try:
-    birdMod1.connect('COM7')
+    birdMod1.connect('COM4')
 
     while True:
         fwd_power_raw = birdMod1.send_command('FWD')
