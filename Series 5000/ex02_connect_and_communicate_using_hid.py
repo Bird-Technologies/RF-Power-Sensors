@@ -54,6 +54,7 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         self._return_duty_cycle = 1 # - 11 duty cycle D
         self._return_ack = 1 # - 13 ACK/NAK A
         self._cmd_delay = 0.3 # 0.3
+        self._device = None
 
         if "5012" in model_number:
             self.PRODUCT_ID = 0x5012
@@ -67,8 +68,16 @@ class Bird_5000_Series_Wideband_Power_Sensor():
             self.PRODUCT_ID = 0x5018
         elif "5019" in model_number:
             self.PRODUCT_ID = 0x5019
+        elif "5010" in model_number:
+            self.PRODUCT_ID = 0x5010
 
-        self.device = hid.Device(self.VENDOR_ID, self.PRODUCT_ID)
+        try:
+            self._device = hid.Device(self.VENDOR_ID, self.PRODUCT_ID)
+        except hid.HIDException:
+            print(0)
+        finally:
+            print(1)
+
 
     def instrument_identification(self)->str:
         """Extracts the instrument identification information for the connected sensor and returns it as a string. 
@@ -78,7 +87,7 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         """
         model_number, software_date, runtime_version = self._do_initialization()
 
-        return f"{self.device.manufacturer},{model_number},{self.device.serial},{runtime_version}"
+        return f"{self._device.manufacturer},{model_number},{self._device.serial},{runtime_version}"
 
     def _do_initialization(self):
         """Issues a command to the sensor telling it to report its identifying information.
@@ -88,15 +97,15 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         """
         # Issue preamble notice
         hex_message = '0350ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
-        self.device.write(bytes.fromhex(hex_message))
+        self._device.write(bytes.fromhex(hex_message))
         
         # I command
         hex_message = '02490d0affffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
-        self.device.write(bytes.fromhex(hex_message))
+        self._device.write(bytes.fromhex(hex_message))
         hex_message = '0353ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
-        self.device.write(bytes.fromhex(hex_message))
+        self._device.write(bytes.fromhex(hex_message))
 
-        response = self.device.read(48, 2000)
+        response = self._device.read(48, 2000)
         cleaned_response = response[1:]
         decoded_response = cleaned_response.decode('utf-8', errors='ignore')
         model_number, software_date, runtime_version = decoded_response.split("\r\n")[0].split(',')
@@ -170,7 +179,7 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         # Issue preamble notice
         buffer = '0350ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
         
-        self.device.write(bytes.fromhex(buffer))
+        self._device.write(bytes.fromhex(buffer))
         time.sleep(self._cmd_delay)
 
         buffer = "02"
@@ -227,7 +236,7 @@ class Bird_5000_Series_Wideband_Power_Sensor():
             buffer += "ff"
         
         # send the command
-        self.device.write(bytes.fromhex(buffer))
+        self._device.write(bytes.fromhex(buffer))
         t2 = time.time()
         delta = t2-t1
         config_time = 1.0
@@ -238,9 +247,9 @@ class Bird_5000_Series_Wideband_Power_Sensor():
 
         hex_message = '0353ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
 
-        self.device.write(bytes.fromhex(hex_message))
+        self._device.write(bytes.fromhex(hex_message))
         time.sleep(config_time)
-        response = self.device.read(48, 2000)
+        response = self._device.read(48, 2000)
         time.sleep(self._cmd_delay)
         cleaned_response = response[1:]
         decoded_response = cleaned_response.decode('utf-8', errors='ignore')[2:]
@@ -249,7 +258,7 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         # Issue preamble notice
         buffer = '0350ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
         #print(buffer)
-        self.device.write(bytes.fromhex(buffer))
+        self._device.write(bytes.fromhex(buffer))
         time.sleep(self._cmd_delay)
 
         # Sample two datasets to ensure config settings are established...
@@ -288,7 +297,7 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         # Issue preamble notice
         buffer = '0350ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
         
-        self.device.write(bytes.fromhex(buffer))
+        self._device.write(bytes.fromhex(buffer))
         time.sleep(self._cmd_delay)
 
         buffer = "02"
@@ -299,12 +308,12 @@ class Bird_5000_Series_Wideband_Power_Sensor():
             buffer += "ff"
         
         # send the command
-        self.device.write(bytes.fromhex(buffer))
+        self._device.write(bytes.fromhex(buffer))
 
         hex_message = '0353ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
-        self.device.write(bytes.fromhex(hex_message))
+        self._device.write(bytes.fromhex(hex_message))
         time.sleep(self._cmd_delay)
-        response = self.device.read(48, 2000)
+        response = self._device.read(48, 2000)
         time.sleep(self._cmd_delay)
         cleaned_response = response[1:]
         decoded_response = cleaned_response.decode('utf-8', errors='ignore')
@@ -392,7 +401,7 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         t1 = time.time()
         # Issue preamble notice
         buffer = '0350ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
-        self.device.write(bytes.fromhex(buffer))
+        self._device.write(bytes.fromhex(buffer))
 
         # Issue command to get one dataset
         buffer = "02"
@@ -402,22 +411,22 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         for j in range(0, 47):
             buffer += "ff"
         # send the command
-        self.device.write(bytes.fromhex(buffer))
+        self._device.write(bytes.fromhex(buffer))
 
         # Issue message to return data
         hex_message = '0353ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
-        self.device.write(bytes.fromhex(hex_message))
-        response = self.device.read(64, 2000)[3:] # responses (report size) said to be 64 bytes max
+        self._device.write(bytes.fromhex(hex_message))
+        response = self._device.read(64, 2000)[3:] # responses (report size) said to be 64 bytes max
         decoded_response = response.decode('utf-8', errors='ignore')
 
         hex_message = '0353ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
-        self.device.write(bytes.fromhex(hex_message))
-        response = self.device.read(64, 2000)[1:] # responses (report size) said to be 64 bytes max
+        self._device.write(bytes.fromhex(hex_message))
+        response = self._device.read(64, 2000)[1:] # responses (report size) said to be 64 bytes max
         decoded_response += response.decode('utf-8', errors='ignore')
 
         hex_message = '0353ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
-        self.device.write(bytes.fromhex(hex_message))
-        response = self.device.read(64, 2000)[1:] # responses (report size) said to be 64 bytes max
+        self._device.write(bytes.fromhex(hex_message))
+        response = self._device.read(64, 2000)[1:] # responses (report size) said to be 64 bytes max
         decoded_response += response.decode('utf-8', errors='ignore')
 
         tempval = decoded_response.split("\r\n")[0].split(',')
@@ -527,7 +536,7 @@ class Bird_5000_Series_Wideband_Power_Sensor():
 
 
 ##### Main Program Start #####
-my5000 = Bird_5000_Series_Wideband_Power_Sensor("5012D")
+my5000 = Bird_5000_Series_Wideband_Power_Sensor("5014")
 print(my5000.instrument_identification())
 
 s1, s2 = my5000.check_calibration()
