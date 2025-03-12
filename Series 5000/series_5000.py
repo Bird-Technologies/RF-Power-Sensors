@@ -205,97 +205,7 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         if self._device_type_flag == 0:
             code, ack_nak = self._do_5012_config(measurement_type=measurement_type, offset_db=offset_db, filter=filter, units=units, ccdf_limit=ccdf_limit)
         elif self._device_type_flag == 1:
-            self._do_5014_config(measurement_type=measurement_type, offset_db=offset_db, filter=filter, units=units, ccdf_limit=ccdf_limit)
-
-        #t1 = time.time()
-        # Issue preamble notice
-        #buffer = '0350ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
-        
-        #self.device.write(bytes.fromhex(buffer))
-        #time.sleep(self._cmd_delay)
-
-        #buffer = "02"
-        # G
-        #buffer += "47"
-
-        # Add a comma...
-        #buffer += "2c"
-
-        # Set the measurement type
-        #hotval = ""
-        #if (measurement_type < 10) and (measurement_type >= 0):
-        #    hotval += self._get_measure_type(measurement_type)
-        #buffer += hotval
-
-        # Add a comma...
-        #buffer += "2c"
-
-        # Set the offset dB
-        #hotval = self._convert_float_to_hex_string(offset_db)
-        #buffer += hotval
-
-        # Add a comma...
-        #buffer += "2c"
-
-        # byte 5:8 is filter value in Hz
-        #temp004 = 0
-        #if filter == 0:
-        #    temp004 = 4500
-        #elif filter == 1:
-        #    temp004 = 400.0
-        #elif filter == 2:
-        #    temp004 = 10000.0
-        
-        #buffer += self._convert_float_to_hex_string(temp004)
-
-        # Add a comma...
-        #buffer += "2c"
-
-        # byte 9 is power units
-        #buffer += self._get_units_type(units)
-
-        # Add a comma...
-        #buffer += "2c"
-
-        # byte 10:13 is CCDF limit in W
-        #buffer += self._convert_float_to_hex_string(ccdf_limit)
-
-        # Terminate the command
-        #buffer += "0d0a"
-
-        # pad the remainder of the message string with "ff"; 22 bytes accounted for so 49-22 = 27
-        #for j in range(0, 5):
-        #    buffer += "ff"
-        
-        # send the command
-        #self.device.write(bytes.fromhex(buffer))
-        #t2 = time.time()
-        #delta = t2-t1
-        #config_time = 1.0
-        #if delta < config_time: 
-        #    time.sleep(config_time - (t2-t1))
-        #else:
-        #    time.sleep(self._cmd_delay)
-
-        #hex_message = '0353ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
-
-        #self.device.write(bytes.fromhex(hex_message))
-        #time.sleep(config_time)
-        #response = self.device.read(48, 2000)
-        #time.sleep(self._cmd_delay)
-        #cleaned_response = response[1:]
-        #decoded_response = cleaned_response.decode('utf-8', errors='ignore')[2:]
-        #code, ack_nak = decoded_response.split("\r\n")[0].split(',')
-
-        # Issue preamble notice
-        #buffer = '0350ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
-        #print(buffer)
-        #self.device.write(bytes.fromhex(buffer))
-        #time.sleep(self._cmd_delay)
-
-        # Sample two datasets to ensure config settings are established...
-        #ds = self.get_one_dataset()
-        #ds = self.get_one_dataset()
+            code, ack_nak = self._do_5014_config(measurement_type=measurement_type, offset_db=offset_db, filter=filter, units=units, ccdf_limit=ccdf_limit)
 
         return code, ack_nak
     
@@ -433,6 +343,91 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         code = None 
         ack_nak = None 
 
+        # Perform the cal check before attempting to change the configuration - required
+        s2 = self.check_calibration()
+        
+        t1 = time.time()
+
+        buffer = "00"
+        # G
+        buffer += "47"
+
+        # Set the measurement type
+        hotval = ""
+        if (measurement_type < 10) and (measurement_type >= 0):
+            hotval += self._get_measure_type(measurement_type)
+        buffer += hotval
+
+        # Add a comma...
+        buffer += "2c"
+
+        # Set the offset dB
+        hotval = self._convert_float_to_hex_string(offset_db)
+        buffer += hotval
+
+        # Add a comma...
+        buffer += "2c"
+
+        # byte 5:8 is filter value in Hz
+        temp004 = 0
+        if filter == 0:
+            temp004 = 4500
+        elif filter == 1:
+            temp004 = 400.0
+        elif filter == 2:
+            temp004 = 10000.0
+        
+        buffer += self._convert_float_to_hex_string(temp004)
+
+        # Add a comma...
+        buffer += "2c"
+
+        # byte 9 is power units
+        buffer += self._get_units_type(units)
+
+        # Add a comma...
+        buffer += "2c"
+
+        # byte 10:13 is CCDF limit in W
+        buffer += self._convert_float_to_hex_string(ccdf_limit)
+
+        # Terminate the command
+        buffer += "0d0a"
+
+        # pad the remainder of the message string with "ff"; 22 bytes accounted for so 49-22 = 27
+        for j in range(0, 5):
+            buffer += "ff"
+        
+        # send the command
+        self.device.write(bytes.fromhex(buffer))
+        t2 = time.time()
+        delta = t2-t1
+        config_time = 1.0
+        if delta < config_time: 
+            time.sleep(config_time - (t2-t1))
+        else:
+            time.sleep(self._cmd_delay)
+
+        hex_message = '0353ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+
+        self.device.write(bytes.fromhex(hex_message))
+        time.sleep(config_time)
+        response = self.device.read(48, 2000)
+        time.sleep(self._cmd_delay)
+        cleaned_response = response[1:]
+        decoded_response = cleaned_response.decode('utf-8', errors='ignore')[2:]
+        code, ack_nak = decoded_response.split("\r\n")[0].split(',')
+
+        # Issue preamble notice
+        buffer = '0350ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+        #print(buffer)
+        self.device.write(bytes.fromhex(buffer))
+        time.sleep(self._cmd_delay)
+
+        # Sample two datasets to ensure config settings are established...
+        ds = self.get_one_dataset()
+        ds = self.get_one_dataset()
+
         return code, ack_nak
 
     def _convert_float_to_hex_string(self, floater:float)->str:
@@ -563,7 +558,7 @@ class Bird_5000_Series_Wideband_Power_Sensor():
             self._return_ccdf_factor = 1
         else:
             self._return_ccdf_factor = 0
-        if "R" in format_string:
+        if "S" in format_string:
             self._return_crest_factor = 1
         else:
             self._return_crest_factor = 0
@@ -595,6 +590,67 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         Returns:
             list: Returns the dataset elements ad defined by the and in the following order - forward power, reflected power, peak power, busrt power, ccdf factor, crest factor, units, duty cycle, temperature, filter value, or ACK/NAK status.
         """
+        fmt_list = None
+
+        if self._device_type_flag == 0:
+            fmt_list = self._get_dataset_5012()
+        elif self._device_type_flag == 1:
+            fmt_list = self._get_dataset_5014()
+        
+        
+        #t1 = time.time()
+        # Issue preamble notice
+        #buffer = '0350ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+        #self.device.write(bytes.fromhex(buffer))
+
+        # Issue command to get one dataset
+        #buffer = "02"
+        # T
+        #buffer += "54"
+        # pad the remainder of the message string with "ff"; 2 bytes accounted for so 49-2 = 47
+        #for j in range(0, 47):
+        #    buffer += "ff"
+        # send the command
+        #self.device.write(bytes.fromhex(buffer))
+
+        # Issue message to return data
+        #hex_message = '0353ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+        #self.device.write(bytes.fromhex(hex_message))
+        #response = self.device.read(64, 2000)[3:] # responses (report size) said to be 64 bytes max
+        #decoded_response = response.decode('utf-8', errors='ignore')
+
+        #hex_message = '0353ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+        #self.device.write(bytes.fromhex(hex_message))
+        #response = self.device.read(64, 2000)[1:] # responses (report size) said to be 64 bytes max
+        #decoded_response += response.decode('utf-8', errors='ignore')
+
+        #hex_message = '0353ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+        #self.device.write(bytes.fromhex(hex_message))
+        #response = self.device.read(64, 2000)[1:] # responses (report size) said to be 64 bytes max
+        #decoded_response += response.decode('utf-8', errors='ignore')
+
+        #tempval = decoded_response.split("\r\n")[0].split(',')
+        #fmt_list = self._get_formatted_output(tempval)
+        #t2 = time.time()
+
+        #time.sleep(0.3 - (t2-t1))
+        # Extracted array holds the following
+        # - 1 busrt power B
+        # - 2 temperature T
+        # - 3 forward power F
+        # - 4 reflected power R
+        # - 5 peak power K
+        # - 6 filter value I
+        # - 7 measure type M
+        # - 8 units U
+        # - 9 ccdf factor C
+        # - 10 crest factor R
+        # - 11 duty cycle D
+        # - 12 n/a - empty
+        # - 13 ACK/NAK A
+        return fmt_list
+    
+    def _get_dataset_5012(self):
         t1 = time.time()
         # Issue preamble notice
         buffer = '0350ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
@@ -646,7 +702,44 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         # - 12 n/a - empty
         # - 13 ACK/NAK A
         return fmt_list
-    
+
+    def _get_dataset_5014(self):
+        # Issue command to get one dataset
+        hex_message = '005400000000000000000000000000000000000000000000000000000000000000'
+
+        self.device.write(bytes.fromhex(hex_message))
+        response = self.device.read(64, 2000)
+        
+        #print(response.decode(encoding='cp437', errors='ignore'))
+        #print(response.decode(encoding='cp437', errors='ignore')[12:16])
+        tmp1 = bytearray(response.decode(encoding='cp437', errors='ignore')[12:16],encoding="cp437")
+        #print(tmp1)
+        #print(struct.unpack('f', tmp1))
+        temperature = struct.unpack('f', tmp1)[0]
+
+        #print(response.decode(encoding='cp437', errors='ignore')[16:20])
+        tmp1 = bytearray(response.decode(encoding='cp437', errors='ignore')[16:20],encoding="cp437")
+        #print(tmp1)
+        #print(struct.unpack('f', tmp1))
+        fwdpwr = struct.unpack('f', tmp1)[0]
+
+        #print(response.decode(encoding='cp437', errors='ignore')[20:24])
+        tmp1 = bytearray(response.decode(encoding='cp437', errors='ignore')[20:24],encoding="cp437")
+        #print(tmp1)
+        #print(struct.unpack('f', tmp1))
+        rflpwr = struct.unpack('f', tmp1)[0]
+
+        # build the list that defines the 5014 dataset...
+        #          burst, temp,      fwd,    refl,   peak, fltr, ccdf, crest, duty, ack
+        dataset = [0.0, temperature, fwdpwr, rflpwr, 0.0,  0.0,  0.0,  0.0,   0.0,  0.0]
+        # delay to prevent duplicate readings; 250 to 300 ms
+        time.sleep(0.25)
+
+        fmt_list = self._get_formatted_output(dataset)
+
+        return fmt_list
+        
+
     def _get_units(self, value:int=9)->str:
         return_value = "W"
         if value == 0:
