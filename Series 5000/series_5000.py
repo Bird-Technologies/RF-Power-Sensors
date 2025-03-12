@@ -190,7 +190,9 @@ class Bird_5000_Series_Wideband_Power_Sensor():
                       offset_db:float=0.0,
                       filter:int=2,
                       units:int=11,
-                      ccdf_limit:float=150.0):
+                      ccdf_limit:float=150.0,
+                      fwd_scale:float=100.0,
+                      rfl_scale:float=10.0):
         """This function is used to configure the sensor
 
         Args:
@@ -209,7 +211,7 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         if self._device_type_flag == 0:
             code, ack_nak = self._do_5012_config(measurement_type=measurement_type, offset_db=offset_db, filter=filter, units=units, ccdf_limit=ccdf_limit)
         elif self._device_type_flag == 1:
-            code, ack_nak = self._do_5014_config(measurement_type=measurement_type, offset_db=offset_db, filter=filter, units=units, ccdf_limit=ccdf_limit)
+            code, ack_nak = self._do_5014_config(measurement_type=measurement_type, offset_db=offset_db, filter=filter, units=units, ccdf_limit=ccdf_limit, fw_scale=fwd_scale, rf_scale=rfl_scale)
 
         return code, ack_nak
     
@@ -331,7 +333,9 @@ class Bird_5000_Series_Wideband_Power_Sensor():
                     offset_db:float=0.0,
                     filter:int=2,
                     units:int=11,
-                    ccdf_limit:float=150.0):
+                    ccdf_limit:float=150.0,
+                    fw_scale:float=100.0,
+                    rf_scale:float=10.0):
         """This function is used to configure the sensor
 
         Args:
@@ -356,81 +360,57 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         # G
         buffer += "47"
 
+        odb = self.float_to_ieee_hex(offset_db, dolend=1)
+        fwp = self.float_to_ieee_hex(fw_scale, dolend=1)
+        rfp = self.float_to_ieee_hex(rf_scale, dolend=1)
+
+        buffer += odb
+        buffer += self.float_to_ieee_hex(0.0, dolend=1)
+        buffer += self.float_to_ieee_hex(0.0, dolend=1)
+
+        buffer += '09' # for the power units, looking like Watts is the way to go...
+
+        buffer += self.float_to_ieee_hex(0.0, dolend=1)
+
+        buffer += fwp
+        buffer += rfp
+
+        for j in range(9):
+            buffer += self.float_to_ieee_hex(0.0, dolend=1)
+
+        buffer += "0000"
+
+        #print(odb, fwp, rfp)
+
         # Set the measurement type
-        hotval = ""
-        if (measurement_type < 10) and (measurement_type >= 0):
-            hotval += self._get_measure_type(measurement_type)
-        buffer += hotval
-
-        # Add a comma...
-        buffer += "2c"
-
-        # Set the offset dB
-        hotval = self._convert_float_to_hex_string(offset_db)
-        buffer += hotval
-
-        # Add a comma...
-        buffer += "2c"
-
-        # byte 5:8 is filter value in Hz
-        temp004 = 0
-        if filter == 0:
-            temp004 = 4500
-        elif filter == 1:
-            temp004 = 400.0
-        elif filter == 2:
-            temp004 = 10000.0
-        
-        buffer += self._convert_float_to_hex_string(temp004)
-
-        # Add a comma...
-        buffer += "2c"
-
-        # byte 9 is power units
-        buffer += self._get_units_type(units)
-
-        # Add a comma...
-        buffer += "2c"
-
-        # byte 10:13 is CCDF limit in W
-        buffer += self._convert_float_to_hex_string(ccdf_limit)
-
-        # Terminate the command
-        buffer += "0d0a"
+        #myval = str(fw_scale).encode('cp437')
+        #print(myval)
+        #print(self.float_to_ieee_hex(fw_scale, dolend=1))
+        #print(myval.hex())
+        #struct.pack()
+        #tmp1 = bytearray(response.decode(encoding='cp437', errors='ignore')[12:16],encoding="cp437")
+        #print(tmp1)
+        #print(struct.unpack('f', tmp1))
+        #temperature = struct.unpack('f', tmp1)[0]
 
         # pad the remainder of the message string with "ff"; 22 bytes accounted for so 49-22 = 27
-        for j in range(0, 5):
-            buffer += "ff"
+        #for j in range(0, 5):
+        #    buffer += "ff"
         
         # send the command
         self.device.write(bytes.fromhex(buffer))
-        t2 = time.time()
-        delta = t2-t1
-        config_time = 1.0
-        if delta < config_time: 
-            time.sleep(config_time - (t2-t1))
-        else:
-            time.sleep(self._cmd_delay)
-
-        hex_message = '0353ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
-
-        self.device.write(bytes.fromhex(hex_message))
-        time.sleep(config_time)
-        response = self.device.read(48, 2000)
-        time.sleep(self._cmd_delay)
-        cleaned_response = response[1:]
-        decoded_response = cleaned_response.decode('utf-8', errors='ignore')[2:]
-        code, ack_nak = decoded_response.split("\r\n")[0].split(',')
-
-        # Issue preamble notice
-        buffer = '0350ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
-        #print(buffer)
-        self.device.write(bytes.fromhex(buffer))
-        time.sleep(self._cmd_delay)
+    
+        time.sleep(0.5)
+        
+        response = self.device.read(64, 2000)
+        #time.sleep(self._cmd_delay)
+        #cleaned_response = response[1:]
+        #decoded_response = cleaned_response.decode('utf-8', errors='ignore')[2:]
+        #code, ack_nak = decoded_response.split("\r\n")[0].split(',')
 
         # Sample two datasets to ensure config settings are established...
-        ds = self.get_one_dataset()
-        ds = self.get_one_dataset()
+        #ds = self.get_one_dataset()
+        #ds = self.get_one_dataset()
 
         return code, ack_nak
 
@@ -523,7 +503,7 @@ class Bird_5000_Series_Wideband_Power_Sensor():
 
         Args:
             format_string (str): F - forward power, R - reflected power, K - peak power, B - burst power,
-            R - crest factor, C - CCDF factor, U - units, D - duty cycle, T - temperature, F - filter,
+            S - crest factor, C - CCDF factor, U - units, D - duty cycle, T - temperature, F - filter,
             A - ACK/NAK
         """
         if "F" in format_string:
@@ -770,9 +750,13 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         # no returns
         print(1)
     
-    def float_to_ieee_hex(self, value):
+    def float_to_ieee_hex(self, value, dolend:int=0):
         # Pack the float into 4 bytes using IEEE 754 format
-        packed_value = struct.pack('>f', value)
+        if dolend == 0:
+            packed_value = struct.pack('>f', value)
+        else:
+            packed_value = struct.pack('<f', value)
+            #upckd = struct.unpack('<f', packed_value)
         # Convert the packed bytes to a hexadecimal string
         hex_value = packed_value.hex()
         return hex_value
