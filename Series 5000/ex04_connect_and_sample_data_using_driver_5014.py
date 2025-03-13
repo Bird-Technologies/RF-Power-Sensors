@@ -46,13 +46,17 @@ print(my5000.instrument_identification())
 cal_status = my5000.check_calibration()
 
 # Set the configuration so the sensor performs average power measurements.
-my5000.configuration(fwd_scale=500.0, rfl_scale=50.0, offset_db=0.0)
+#   - The forward element is for meauring 500 W, so, for example, the 500H.
+#   - The reflected element is for measuring 50 W, so, for example, the 50H.
+#   - The measurement type is set to 9 which indicates that Model 43 elements
+#     are being used in the 5014 sockets. 
+my5000.configuration(fwd_scale=500.0, rfl_scale=50.0, measurement_type=9)
 
 # Set the dataset readback format to display forward power, reflected power, and temperature. 
 my5000.set_data_format("FRT")
 
 # Sample data...
-for k in range(0, 10):
+for k in range(0, 100):
     print(my5000.get_one_dataset())
 
 print("Done")
