@@ -188,7 +188,7 @@ class Bird_5000_Series_Wideband_Power_Sensor():
     def configuration(self,
                       measurement_type:int=1, 
                       offset_db:float=0.0,
-                      filter:int=2,
+                      filter:int=0,
                       units:int=11,
                       ccdf_limit:float=150.0,
                       fwd_scale:float=100.0,
@@ -196,17 +196,19 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         """This function is used to configure the sensor
 
         Args:
-            measurement_type (int, optional): 0 = None, 1 = Average, 2 = Peak, 3 = Burst, 4 = Crest, 5 = CCDF, 6 = Average Peak. Defaults to 1.
+            measurement_type (int, optional): 0 = None, 1 = Average, 2 = Peak, 3 = Burst, 4 = Crest, 5 = CCDF, 6 = Average Peak, 7 = Ave APM, 8 = APM, 9 = 43, 10 = 43 Peak, 11 = 43 Peak Avg. Defaults to 1.
             offset_db (float, optional): The power offset for the measurements. Defaults to 0.0.
             filter (int, optional): Sets the filter speed for the measurements, use 0 for 4500 Hz, 1 for 400 kHz, and 2 for 10 MHz. Defaults to 2.
             units (int, optional): Sets the power units for the measurements to be acquired from the sensor. 0=None, 1=dB, 2=Rho, 3=VSWR, 4=R, 5=RL, 6=dBm, 7=uW, 8=mW, 9=W, 10=kW, 11=Auto W, 12=MHz, 13=kHz, 14=Raw. Defaults to 11.
             ccdf_limit (float, optional): Sets the ccdf limit for the measurements.. Defaults to 150.0.
+            fw_scale (float, optional): Sets the scaling based on the element used in the forward socket.
+            rf_scale (float, optional): Sets the scaling based on the element used in the reflected socket
 
         Returns:
             _type_: code, ack_nak
         """
         # Perform the cal check before attempting to change the configuration - required
-        s2 = self.check_calibration()
+        #s2 = self.check_calibration()  #shouldn't need this here; the 5012/5016/5017/5018/5019 code need it, 5014/5010 do not
         
         if self._device_type_flag == 0:
             code, ack_nak = self._do_5012_config(measurement_type=measurement_type, offset_db=offset_db, filter=filter, units=units, ccdf_limit=ccdf_limit)
@@ -329,9 +331,9 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         return code, ack_nak
 
     def _do_5014_config(self,
-                    measurement_type:int=1, 
+                    measurement_type:int=9, 
                     offset_db:float=0.0,
-                    filter:int=2,
+                    filter:int=0,
                     units:int=11,
                     ccdf_limit:float=150.0,
                     fw_scale:float=100.0,
@@ -339,11 +341,13 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         """This function is used to configure the sensor
 
         Args:
-            measurement_type (int, optional): 0 = None, 1 = Average, 2 = Peak, 3 = Burst, 4 = Crest, 5 = CCDF, 6 = Average Peak. Defaults to 1.
+            measurement_type (int, optional): 0 = None, 1 = Average, 2 = Peak, 3 = Burst, 4 = Crest, 5 = CCDF, 6 = Average Peak, 7 = Ave APM, 8 = APM, 9 = 43, 10 = 43 Peak, 11 = 43 Peak Avg. Defaults to 9.
             offset_db (float, optional): The power offset for the measurements. Defaults to 0.0.
             filter (int, optional): Sets the filter speed for the measurements, use 0 for 4500 Hz, 1 for 400 kHz, and 2 for 10 MHz. Defaults to 2.
             units (int, optional): Sets the power units for the measurements to be acquired from the sensor. 0=None, 1=dB, 2=Rho, 3=VSWR, 4=R, 5=RL, 6=dBm, 7=uW, 8=mW, 9=W, 10=kW, 11=Auto W, 12=MHz, 13=kHz, 14=Raw. Defaults to 11.
             ccdf_limit (float, optional): Sets the ccdf limit for the measurements.. Defaults to 150.0.
+            fw_scale (float, optional): Sets the scaling based on the element used in the forward socket.
+            rf_scale (float, optional): Sets the scaling based on the element used in the reflected socket
 
         Returns:
             _type_: code, ack_nak
@@ -352,21 +356,41 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         ack_nak = None 
 
         # Perform the cal check before attempting to change the configuration - required
-        s2 = self.check_calibration()
+        #s2 = self.check_calibration()
         
         t1 = time.time()
+
+        odb = self.float_to_ieee_hex(offset_db, dolend=1)
+        flt = self.float_to_ieee_hex(float(filter), dolend=1)
+        fwp = self.float_to_ieee_hex(fw_scale, dolend=1)
+        rfp = self.float_to_ieee_hex(rf_scale, dolend=1)
 
         buffer = "00"
         # G
         buffer += "47"
 
-        odb = self.float_to_ieee_hex(offset_db, dolend=1)
-        fwp = self.float_to_ieee_hex(fw_scale, dolend=1)
-        rfp = self.float_to_ieee_hex(rf_scale, dolend=1)
+        #buffer += odb
+        # The next two bytes appear to remain zero if the measurement mode is APM16 or 43.
+        #buffer += self.float_to_ieee_hex(0.0, dolend=1)
+        buffer += "0000"
 
+        # The next byte is appearing as '16' but we don't presently know what this maps to
+        #buffer += self.float_to_ieee_hex(0.0, dolend=1)
+        buffer += '16'
+
+        # The next byte appears to be setting the measure type, though shared documentation indicates this should
+        # come earlier. That same documentation is missing a chunk of bytes, too, so room for improvement(?).
+        # Set the measurement type
+        hotval = ""
+        if (measurement_type < 10) and (measurement_type >= 0):
+            hotval = self._get_measure_type(measurement_type)
+        buffer += hotval
+
+        # The next thing that should come in the sequence is the offset dB value then the filter value, though
+        # neither may be applicable to the use of the 5014 sensor with its elements. Ensure "00000000" is passed
+        # for each. 
         buffer += odb
-        buffer += self.float_to_ieee_hex(0.0, dolend=1)
-        buffer += self.float_to_ieee_hex(0.0, dolend=1)
+        buffer += flt
 
         buffer += '09' # for the power units, looking like Watts is the way to go...
 
@@ -379,23 +403,6 @@ class Bird_5000_Series_Wideband_Power_Sensor():
             buffer += self.float_to_ieee_hex(0.0, dolend=1)
 
         buffer += "0000"
-
-        #print(odb, fwp, rfp)
-
-        # Set the measurement type
-        #myval = str(fw_scale).encode('cp437')
-        #print(myval)
-        #print(self.float_to_ieee_hex(fw_scale, dolend=1))
-        #print(myval.hex())
-        #struct.pack()
-        #tmp1 = bytearray(response.decode(encoding='cp437', errors='ignore')[12:16],encoding="cp437")
-        #print(tmp1)
-        #print(struct.unpack('f', tmp1))
-        #temperature = struct.unpack('f', tmp1)[0]
-
-        # pad the remainder of the message string with "ff"; 22 bytes accounted for so 49-22 = 27
-        #for j in range(0, 5):
-        #    buffer += "ff"
         
         # send the command
         self.device.write(bytes.fromhex(buffer))
@@ -403,14 +410,6 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         time.sleep(0.5)
         
         response = self.device.read(64, 2000)
-        #time.sleep(self._cmd_delay)
-        #cleaned_response = response[1:]
-        #decoded_response = cleaned_response.decode('utf-8', errors='ignore')[2:]
-        #code, ack_nak = decoded_response.split("\r\n")[0].split(',')
-
-        # Sample two datasets to ensure config settings are established...
-        #ds = self.get_one_dataset()
-        #ds = self.get_one_dataset()
 
         return code, ack_nak
 
