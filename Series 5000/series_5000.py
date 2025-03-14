@@ -105,7 +105,7 @@ class Bird_5000_Series_Wideband_Power_Sensor():
 
         if self._device_type_flag == 0:
             model_number, software_date, runtime_version = self._init_5012_method()
-        elif self._device_type_flag == 1:
+        elif (self._device_type_flag == 1) or (self._device_type_flag == 2):
             model_number, software_date, runtime_version = self._init_5014_method()
         
         return model_number, software_date, runtime_version
@@ -443,7 +443,7 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         status = 0
         if self._device_type_flag == 0:
             status = self._cal_check_5012()
-        elif self._device_type_flag == 1:
+        elif (self._device_type_flag == 1) or (self._device_type_flag == 2):
             status = self._cal_check_5014()
 
         return status
@@ -577,7 +577,7 @@ class Bird_5000_Series_Wideband_Power_Sensor():
 
         if self._device_type_flag == 0:
             fmt_list = self._get_dataset_5012()
-        elif self._device_type_flag == 1:
+        elif (self._device_type_flag == 1) or (self._device_type_flag == 2):
             fmt_list = self._get_dataset_5014()
         
         return fmt_list
