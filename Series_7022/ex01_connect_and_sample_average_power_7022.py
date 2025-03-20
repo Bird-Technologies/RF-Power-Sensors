@@ -64,9 +64,19 @@ def vswr_to_return_loss(VSWR:float) -> float:
     except:
         return 9.999e+37
 
+def sample_measurement_data(instobj:object):
+    response = instobj.query_binary_values(":TRAC:APOW?", datatype='f', is_big_endian=True)
+    dud = response[0]
+    fwd = response[2]
+    rfl = response[4]
+    temp = response[6]
+    freq = response[8]
+    vswr = calculate_vswr(fwd_pow=fwd, rfl_power=rfl)
+    rl = vswr_to_return_loss(vswr)
+    return fwd, rfl, temp, freq, vswr, rl
     
 # Create a file to save data to
-output_data_path = time.strftime("C:\\Temp\\rf_power_data_%Y-%m-%d_%H-%M-%S.csv")
+output_data_path = time.strftime("C:\\Temp\\7022_rf_power_data_%Y-%m-%d_%H-%M-%S.csv")
 
 # Instrument resource string
 MY7022 = "USB0::0x1422::0x7022::141100792::INSTR"
@@ -80,20 +90,26 @@ time.sleep(1.5)
 
 print(my7022.query("*IDN?"))
 
-t1 = time.time()
-for j in range (100):
-    response = my7022.query_binary_values(":TRAC:APOW?", datatype='f', is_big_endian=True)
-    dud = response[0]
-    fwd = response[2]
-    rfl = response[4]
-    temp = response[6]
-    freq = response[8]
-    vswr = calculate_vswr(fwd_pow=fwd, rfl_power=rfl)
-    rl = vswr_to_return_loss(vswr)
-    t2 = time.time()
-    elapsed_time = f"{t2-t1:.3f}"
-    print(f"MEAS {j} -> FREQ = {freq:3.3f} MHz, FWD_POW = {fwd:0.4f} W, RFL_POW = {rfl:0.4f}, VSWR = {vswr:0.2f}, RET_LOSS = {rl} dBm, TEMP = {temp:0.2f} C, Elapsed Time = {elapsed_time}")
-    time.sleep(0.01)
+# Define the header for the CSV
+header = ['Time (s)', 'Fwd_Power (W)', 'Refl_Power (W)', 'VSWR', "Return Loss (dB)", "Temperature (deg C)"]
+
+# Sample data and write to CSV
+with open(output_data_path, mode='a', newline='') as file:
+    writer = csv.writer(file)
+    writer.writerow(header)  # Write the header
+
+    mins_to_log = 1 # since the delay within the loop is 0.5s, it should take approximately 120 samples to fill a minute, so set the minutes here
+    t1 = time.time()
+    for j in range (120*mins_to_log):
+        fwd, rfl, temp, freq, vswr, rl = sample_measurement_data(my7022)
+        t2 = time.time()
+        elapsed_time = f"{t2-t1:.3f}"
+        print(f"MEAS {j} -> FREQ = {freq:3.3f} MHz, FWD_POW = {fwd:0.4f} W, RFL_POW = {rfl:0.4f}, VSWR = {vswr:0.2f}, RET_LOSS = {rl} dBm, TEMP = {temp:0.2f} C, Elapsed Time = {elapsed_time}")
+        
+        data = [elapsed_time, fwd, rfl, vswr, rl, temp]
+        writer.writerow(data)   # Write the data
+
+        time.sleep(0.5)
 
 my7022.close()
 rm.close()
