@@ -99,14 +99,14 @@ with open(output_data_path, mode='a', newline='') as file:
     writer.writerow(header)  # Write the header
 
     mins_to_log = 1 # since the delay within the loop is 0.5s, it should take approximately 120 samples to fill a minute, so set the minutes here
+    
     t1 = time.time()
     for j in range (120*mins_to_log):
         fwd, rfl, temp, freq, vswr, rl = sample_measurement_data(my7022)
         t2 = time.time()
         elapsed_time = f"{t2-t1:.3f}"
         print(f"MEAS {j} -> FREQ = {freq:3.3f} MHz, FWD_POW = {fwd:0.4f} W, RFL_POW = {rfl:0.4f}, VSWR = {vswr:0.2f}, RET_LOSS = {rl} dBm, TEMP = {temp:0.2f} C, Elapsed Time = {elapsed_time}")
-        
-        data = [elapsed_time, fwd, rfl, vswr, rl, temp]
+        data = [elapsed_time, f"{fwd:0.3f}", f"{rfl:0.3f}", f"{vswr:0.2f}", rl, f"{temp:0.2f}"]
         writer.writerow(data)   # Write the data
 
         time.sleep(0.5)
