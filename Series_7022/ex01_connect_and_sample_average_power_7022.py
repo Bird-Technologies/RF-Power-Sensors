@@ -80,6 +80,7 @@ time.sleep(1.5)
 
 print(my7022.query("*IDN?"))
 
+t1 = time.time()
 for j in range (100):
     response = my7022.query_binary_values(":TRAC:APOW?", datatype='f', is_big_endian=True)
     dud = response[0]
@@ -89,8 +90,10 @@ for j in range (100):
     freq = response[8]
     vswr = calculate_vswr(fwd_pow=fwd, rfl_power=rfl)
     rl = vswr_to_return_loss(vswr)
-    print(f"MEAS {j} -> FREQ = {freq:3.3f} MHz, FWD_POW = {fwd:0.3e} W, RFL_POW = {rfl:0.3e}, VSWR = {vswr:0.2f}, RET_LOSS = {rl} dBm, TEMP = {temp:0.2f} C")
-    time.sleep(0.5)
+    t2 = time.time()
+    elapsed_time = f"{t2-t1:.3f}"
+    print(f"MEAS {j} -> FREQ = {freq:3.3f} MHz, FWD_POW = {fwd:0.4f} W, RFL_POW = {rfl:0.4f}, VSWR = {vswr:0.2f}, RET_LOSS = {rl} dBm, TEMP = {temp:0.2f} C, Elapsed Time = {elapsed_time}")
+    time.sleep(0.01)
 
 my7022.close()
 rm.close()
