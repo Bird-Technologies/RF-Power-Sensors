@@ -1,8 +1,7 @@
 """
 Example Description:
         This example shows how to use the 4421B540-2 sensor interface module
-        to query forward and reflected power and temperature of a connected 
-        402x sensor.
+        to sample measurements and log them to file. 
 
         The code uses the Bird4421B540Class class that is defined in a separate
         module file to better exhibit object oriented programming concepts. 
@@ -33,7 +32,7 @@ SOFTWARE.
 
 @endverbatim
 
-@file ex01_connect_and_measure_power_using_separate_serial_class.py
+@file ex02_log_power_measurments_to_file.py
  
 """
 
@@ -41,7 +40,34 @@ from interface_module_4421B540_2_serial import Bird4421B540Class
 import time
 import math
 import csv
-    
+
+# Function to convert VSWR to return loss
+def vswr_to_return_loss(VSWR:float) -> float:
+    """Converts the VSWR value to return loss in dB.
+
+    Args:
+        VSWR (float): VSWR value. 
+
+    Returns:
+        float: Computed return loss in dB. If there is a problem with
+        the math on the input value, the 9.99e+37 value will be returned
+        to indicate the error condition.
+    """
+    try:
+        VSWR = float(VSWR)
+        if VSWR <= 1:
+            return 9.999e+37
+        Return_Loss = -20 * math.log10((VSWR - 1)/(VSWR + 1))
+        return f"{Return_Loss:.2f}"
+    except:
+        return 9.999e+37
+
+
+def compute_vswr_from_power(fwd_pwr:float, rfl_pwr:float)->float:
+    vswr_calc = (1 + math.sqrt(rfl_pwr/fwd_pwr)) / (1 - math.sqrt(rfl_pwr/fwd_pwr))
+    return vswr_calc
+
+
 # Create a file to save data to
 output_data_path = time.strftime("C:\\Temp\\4421B_rf_power_data_%Y-%m-%d_%H-%M-%S.csv")
 
@@ -72,6 +98,8 @@ try:
             # Fetch readings from the instrument
             forward_power = birdMod1.measure_forward_power()
             reflected_power = birdMod1.measure_reflected_power()
+            #vswr = compute_vswr_from_power(forward_power, reflected_power)
+            #rl = vswr_to_return_loss(vswr)
             temp = birdMod1.measure_temperature()
             
             if debug_print == 1:
