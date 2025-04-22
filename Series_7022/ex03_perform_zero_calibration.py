@@ -1,8 +1,6 @@
 """
 Example Description:
-        This example samples forward and reflected power, VSWR, and the
-        meter's temperature, calculates return loss for a specified duration
-        and logs to time-stamped *.csv file. 
+        This example shows how the zero calibration function might be used. 
 
 @verbatim
 
@@ -30,7 +28,7 @@ SOFTWARE.
 
 @endverbatim
 
-@file ex01_connect_and_sample_average_power_7022.py
+@file ex01_perform_zero_calibration.py
  
 """
 
