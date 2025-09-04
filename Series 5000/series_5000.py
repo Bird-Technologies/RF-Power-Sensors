@@ -63,6 +63,8 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         self._alt_fw_ver = ""
         self._alt_sn = ""
         self._alt_model = ""
+        self._5014_fwd_rng = 100
+        self._5014_rfl_rng = 10
 
         if "5012" in model_number:
             self.PRODUCT_ID = 0x5012
@@ -363,7 +365,9 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         odb = self.float_to_ieee_hex(offset_db, dolend=1)
         flt = self.float_to_ieee_hex(float(filter), dolend=1)
         fwp = self.float_to_ieee_hex(fw_scale, dolend=1)
+        self.device._5014_fwd_rng = fw_scale
         rfp = self.float_to_ieee_hex(rf_scale, dolend=1)
+        self.device._5014_rfl_rng = rf_scale
 
         buffer = "00"
         # G
@@ -654,12 +658,24 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         #print(tmp1)
         #print(struct.unpack('f', tmp1))
         fwdpwr = struct.unpack('f', tmp1)[0]
+        if fwdpwr > self.device._5014_fwd_rng * 1.10:   # if the power exceeds the scale range, limit it to 10% above range
+            fwdpwr = self.device._5014_fwd_rng * 1.10
+        if fwdpwr < self.device._5014_fwd_rng * 0.001:  # if the power is below a logical reading level, report as 0 W
+            fwdpwr = 0
+
 
         #print(response.decode(encoding='cp437', errors='ignore')[20:24])
         tmp1 = bytearray(response.decode(encoding='cp437', errors='ignore')[20:24],encoding="cp437")
         #print(tmp1)
         #print(struct.unpack('f', tmp1))
+        tmp_rfl = struct.unpack('f', tmp1)[0]
         rflpwr = struct.unpack('f', tmp1)[0]
+        if rflpwr > 10000.00:   # account for the very low end where there can be register overrun and bit-flip
+            rflpwr = 0
+        if rflpwr > self.device._5014_rfl_rng * 1.10: # if the power exceeds the scale range, limit it to 10% above range
+            rflpwr = self.device._5014_rfl_rng * 1.10
+        if rflpwr < self.device._5014_rfl_rng * 0.001: # if the power is below a logical reading level, report as 0 W
+            rflpwr = 0
 
         # build the list that defines the 5014 dataset...
         #          burst, temp,      fwd,    refl,   peak, fltr, ccdf, crest, duty, ack
