@@ -34,7 +34,7 @@ SOFTWARE.
  
 """
 from series_5000 import Bird_5000_Series_Wideband_Power_Sensor
-
+from time import sleep
 
 ##### Main Program Start #####
 my5000 = Bird_5000_Series_Wideband_Power_Sensor("5014")
@@ -50,13 +50,14 @@ cal_status = my5000.check_calibration()
 #   - The reflected element is for measuring 50 W, so, for example, the 50H.
 #   - The measurement type is set to 9 which indicates that Model 43 elements
 #     are being used in the 5014 sockets. 
-my5000.configuration(fwd_scale=500.0, rfl_scale=50.0, measurement_type=9)
+my5000.configuration(fwd_scale=100.0, rfl_scale=10.0, measurement_type=9)
 
 # Set the dataset readback format to display forward power, reflected power, and temperature. 
 my5000.set_data_format("FRT")
 
 # Sample data...
-for k in range(0, 100):
+for k in range(0, 120):
+    sleep(1.0)
     print(my5000.get_one_dataset())
 
 print("Done")
