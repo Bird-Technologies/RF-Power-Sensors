@@ -658,10 +658,11 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         #print(tmp1)
         #print(struct.unpack('f', tmp1))
         fwdpwr = struct.unpack('f', tmp1)[0]
-        if fwdpwr > self.device._5014_fwd_rng * 1.10:   # if the power exceeds the scale range, limit it to 10% above range
-            fwdpwr = self.device._5014_fwd_rng * 1.10
-        if fwdpwr < self.device._5014_fwd_rng * 0.001:  # if the power is below a logical reading level, report as 0 W
-            fwdpwr = 0
+        if self._device_type_flag == 1:
+            if fwdpwr > self.device._5014_fwd_rng * 1.10:   # if the power exceeds the scale range, limit it to 10% above range
+                fwdpwr = self.device._5014_fwd_rng * 1.10
+            if fwdpwr < self.device._5014_fwd_rng * 0.001:  # if the power is below a logical reading level, report as 0 W
+                fwdpwr = 0
 
 
         #print(response.decode(encoding='cp437', errors='ignore')[20:24])
@@ -672,10 +673,11 @@ class Bird_5000_Series_Wideband_Power_Sensor():
         rflpwr = struct.unpack('f', tmp1)[0]
         if rflpwr > 10000.00:   # account for the very low end where there can be register overrun and bit-flip
             rflpwr = 0
-        if rflpwr > self.device._5014_rfl_rng * 1.10: # if the power exceeds the scale range, limit it to 10% above range
-            rflpwr = self.device._5014_rfl_rng * 1.10
-        if rflpwr < self.device._5014_rfl_rng * 0.001: # if the power is below a logical reading level, report as 0 W
-            rflpwr = 0
+        if self._device_type_flag == 1:
+            if rflpwr > self.device._5014_rfl_rng * 1.10: # if the power exceeds the scale range, limit it to 10% above range
+                rflpwr = self.device._5014_rfl_rng * 1.10
+            if rflpwr < self.device._5014_rfl_rng * 0.001: # if the power is below a logical reading level, report as 0 W
+                rflpwr = 0
 
         # build the list that defines the 5014 dataset...
         #          burst, temp,      fwd,    refl,   peak, fltr, ccdf, crest, duty, ack
