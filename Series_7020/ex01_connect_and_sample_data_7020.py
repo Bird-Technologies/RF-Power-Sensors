@@ -1,8 +1,8 @@
 """
 Example Description:
-        This example shows how to configure the 5000 Series Wideband Power 
-        Sensors and acquire measurement data, all through the USB HID
-        communications interface.         
+        This example shows how to connect to the 7020 Series Power 
+        Sensors and acquire measurement data, all through the use
+        of the Bird series_5000.py driver interface.         
 
 @verbatim
 
@@ -30,33 +30,29 @@ SOFTWARE.
 
 @endverbatim
 
-@file ex04_connect_and_sample_data_using_driver_5014.py
+@file ex01_connect_and_sample_data_7020.py
  
 """
 from series_5000 import Bird_5000_Series_Wideband_Power_Sensor
 
 
 ##### Main Program Start #####
-my5000 = Bird_5000_Series_Wideband_Power_Sensor("5014")
+my7020 = Bird_5000_Series_Wideband_Power_Sensor("7020")
 
 # Print the sensor identification info to the console.
-print(my5000.instrument_identification())
+print(my7020.instrument_identification())
 
 # Perform the calibration check.
-cal_status = my5000.check_calibration()
+cal_status = my7020.check_calibration()
 
-# Set the configuration so the sensor performs average power measurements.
-#   - The forward element is for meauring 500 W, so, for example, the 500H.
-#   - The reflected element is for measuring 50 W, so, for example, the 50H.
-#   - The measurement type is set to 9 which indicates that Model 43 elements
-#     are being used in the 5014 sockets. 
-my5000.configuration(fwd_scale=500.0, rfl_scale=50.0, measurement_type=9)
+# Configuration is stubbed out for now since most settings are not applicable. 
+#my7020.configuration(measurement_type=1)
 
 # Set the dataset readback format to display forward power, reflected power, and temperature. 
-my5000.set_data_format("FRT")
+my7020.set_data_format("FRT")
 
 # Sample data...
-for k in range(0, 10):
-    print(my5000.get_one_dataset())
+for k in range(0, 100):
+    print(my7020.get_one_dataset())
 
 print("Done")
