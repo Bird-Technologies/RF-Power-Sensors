@@ -49,10 +49,13 @@ class Bird4421B540Class:
             "FWD": bytearray(b'F'),
             "REF": bytearray(b'R'),
             "TEMP": bytearray(b'T'),
+            "V": bytearray(b'V')
         }
         self.log_file = None
+        self.__sensor_model = ""
+        self.__sensor_cal_date = ""
 
-    def connect(self, comm='COM7'):
+    def connect(self, comm='COM4'):
         self.__sensor.port = comm
         self.__sensor.baudrate = self.__baud
         self.__sensor.bytesize = serial.EIGHTBITS       
@@ -66,6 +69,7 @@ class Bird4421B540Class:
         self.__sensor.open()
         self.__sensor.flushInput()
         self.__sensor.flushOutput()
+        
 
     def __send_command(self, command:str):
         try:
@@ -76,6 +80,33 @@ class Bird4421B540Class:
             return ret_val
         except KeyError:
             return
+        
+    def get_sensor_identification(self):
+        fc = self.__commands[str("ID")]
+        self.__sensor.write(fc)
+        id_read = self.__sensor.read(32).decode('utf-8').split(' ')
+        self.__sensor_model = id_read[0]
+        self.__sensor_cal_date = id_read[1]
+        huh_str = id_read[2]
+        id_read = self.__sensor.read(32)
+        this_str = list(id_read)
+        # that_str = id_read[12].encode('utf-8')
+        return self.__sensor_model, self.__sensor_cal_date, huh_str
+    
+    def get_the_v(self):
+        fc = self.__commands[str("V")]
+        #fc = 'V'
+        self.__sensor.write(fc)
+        raw_val = self.__sensor.read(4)
+        val1 = raw_val[0]
+        val2 = raw_val[1]
+        val3 = raw_val[2]
+        val4 = raw_val[3]
+        #fwd_power = self.__bird_float_2_IEEE_float(raw_val)
+        #self.__sensor_model = id_read[0]
+        #self.__sensor_cal_date = id_read[1]
+        ret_val = [raw_val[i:i + 1] for i in range(0, len(raw_val))]  # byte to byte array split
+        return ret_val
 
     def measure_forward_power(self)->float:
         """This method returns the forward power as measured by the sensor. 
